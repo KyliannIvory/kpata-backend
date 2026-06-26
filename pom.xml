@@ -91,6 +91,11 @@
 			<artifactId>spring-modulith-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>com.googlecode.libphonenumber</groupId>
+			<artifactId>libphonenumber</artifactId>
+			<version>8.13.52</version>
+		</dependency>
 	</dependencies>
 	<dependencyManagement>
 		<dependencies>
