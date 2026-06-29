@@ -4,10 +4,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.UUID;
 
@@ -15,7 +12,8 @@ import java.util.UUID;
 @Getter @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "professional_profile")
+@Table(name = "professional_profiles")
+@Builder
 class ProfessionalProfile {
 
     @Id
