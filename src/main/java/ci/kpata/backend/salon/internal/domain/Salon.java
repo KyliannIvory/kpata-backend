@@ -4,6 +4,7 @@ import ci.kpata.backend.shared.validation.IvoryCoastPhone;
 import ci.kpata.backend.shared.validation.StrictEmail;
 import jakarta.persistence.*;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
 
@@ -14,7 +15,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@Table(name = "salon")
+@Table(name = "salons")
 class Salon {
 
     @Id
@@ -23,6 +24,7 @@ class Salon {
     private UUID id;
 
     @Column(nullable = false)
+    @NotBlank
     private String name;
 
     @Embedded
@@ -30,6 +32,7 @@ class Salon {
     private Address address;
 
     @Column(nullable = false)
+    @NotBlank
     private String description;
 
     @IvoryCoastPhone
