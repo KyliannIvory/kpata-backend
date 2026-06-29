@@ -1,6 +1,5 @@
-package ci.kpata.backend.auth;
+package ci.kpata.backend.shared.validation;
 
-import ci.kpata.backend.auth.internal.validation.IvoryCoastPhoneValidator;
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
 

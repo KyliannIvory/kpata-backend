@@ -1,6 +1,5 @@
-package ci.kpata.backend.auth.internal.validation;
+package ci.kpata.backend.shared.validation;
 
-import ci.kpata.backend.auth.IvoryCoastPhone;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import com.google.i18n.phonenumbers.Phonenumber;
 import jakarta.validation.ConstraintValidator;

@@ -1,6 +1,6 @@
 package ci.kpata.backend.auth.internal.domain;
 
-import ci.kpata.backend.auth.IvoryCoastPhone;
+import ci.kpata.backend.shared.validation.IvoryCoastPhone;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
