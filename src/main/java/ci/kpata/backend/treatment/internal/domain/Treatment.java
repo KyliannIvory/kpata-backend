@@ -34,7 +34,7 @@ class Treatment {
     @Column(length = 1000)
     private String description;
 
-    @Column(nullable = false, precision = 12, scale = 0)
+    @Column(nullable = false, precision = 12)
     @DecimalMin(value = "0", message = "The price can't be negative.")
     @NotNull
     private BigDecimal price;
