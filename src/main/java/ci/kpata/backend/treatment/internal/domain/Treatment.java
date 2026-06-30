@@ -44,7 +44,7 @@ class Treatment {
     @NotNull
     private Integer durationInMinutes;
 
-    @Column(name = "salon_id", nullable = false)
-    private UUID salonId;
+    @Column(name = "professional_id", nullable = false)
+    private UUID professionalId;
 
 }
