@@ -1,5 +1,6 @@
 package ci.kpata.backend.treatment.internal.domain;
 
+import ci.kpata.backend.shared.domain.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -20,7 +21,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @Builder
 @Table(name = "treatments")
-class Treatment {
+class Treatment extends BaseEntity {
 
     @Id
     @UuidGenerator(style = UuidGenerator.Style.VERSION_7)
