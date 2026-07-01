@@ -1,5 +1,6 @@
 package ci.kpata.backend.availability.internal.domain;
 
+import ci.kpata.backend.shared.domain.BaseEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -15,7 +16,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-class Availability {
+class Availability extends BaseEntity {
 
     @Id
     @UuidGenerator(style = UuidGenerator.Style.VERSION_7)

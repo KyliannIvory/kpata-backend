@@ -1,5 +1,6 @@
 package ci.kpata.backend.profile.internal.domain;
 
+import ci.kpata.backend.shared.domain.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -14,7 +15,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Table(name = "customer_profiles")
 @Builder
-class CustomerProfile {
+class CustomerProfile extends BaseEntity {
 
     @Id
     @Column(name = "user_id", updatable = false, nullable = false)

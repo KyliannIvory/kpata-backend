@@ -1,13 +1,11 @@
 package ci.kpata.backend.auth.internal.domain;
 
+import ci.kpata.backend.shared.domain.BaseEntity;
 import ci.kpata.backend.shared.validation.IvoryCoastPhone;
 import ci.kpata.backend.shared.validation.StrictEmail;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.util.HashSet;
@@ -20,7 +18,8 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "users")
-class User {
+@Builder
+class User extends BaseEntity {
 
     @Id
     @UuidGenerator(style = UuidGenerator.Style.VERSION_7)

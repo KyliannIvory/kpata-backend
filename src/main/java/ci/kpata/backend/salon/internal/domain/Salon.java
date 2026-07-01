@@ -1,5 +1,6 @@
 package ci.kpata.backend.salon.internal.domain;
 
+import ci.kpata.backend.shared.domain.BaseEntity;
 import ci.kpata.backend.shared.validation.IvoryCoastPhone;
 import ci.kpata.backend.shared.validation.StrictEmail;
 import jakarta.persistence.*;
@@ -16,7 +17,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @Builder
 @Table(name = "salons")
-class Salon {
+class Salon extends BaseEntity {
 
     @Id
     @UuidGenerator(style = UuidGenerator.Style.VERSION_7)
