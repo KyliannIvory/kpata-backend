@@ -32,19 +32,19 @@ class Salon extends BaseEntity {
     @Valid
     private Address address;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     @NotBlank
     private String description;
 
     @IvoryCoastPhone
-    @Column(name = "phone_number",nullable = false)
+    @Column(name = "phone_number",nullable = false, length = 20)
     private String phoneNumber;
 
     @Column(name = "owner_id", nullable = false)
     private UUID ownerId;
 
     @StrictEmail
-    @Column(nullable = false)
+    @Column(nullable = false, length = 100)
     private String email;
 
 }

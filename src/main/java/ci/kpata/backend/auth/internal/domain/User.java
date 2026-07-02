@@ -35,7 +35,7 @@ class User extends BaseEntity {
     private String lastname;
 
     @IvoryCoastPhone
-    @Column(name = "phone_number", nullable = false, unique = true)
+    @Column(name = "phone_number", nullable = false, unique = true, length = 20)
     @NotBlank
     private String phoneNumber;
 
@@ -50,6 +50,6 @@ class User extends BaseEntity {
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "user_roles",joinColumns = @JoinColumn(name = "user_id"))
     @Enumerated(EnumType.STRING)
-    @Column(name = "role")
+    @Column(name = "role", length = 50)
     private Set<Role> roles = new HashSet<>();
 }

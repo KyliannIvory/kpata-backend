@@ -43,7 +43,7 @@ class Appointment extends BaseEntity {
     private LocalDateTime endAt;
 
     @NotNull
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     @Enumerated(EnumType.STRING)
     private AppointmentStatus status;
 }
