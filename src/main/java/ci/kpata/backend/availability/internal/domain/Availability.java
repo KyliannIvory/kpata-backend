@@ -28,7 +28,7 @@ class Availability extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @NotNull
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     private DayOfWeek day;
 
     @NotNull
