@@ -1,0 +1,32 @@
+name: ci.yml
+
+on: [push, pull_request]
+
+jobs:
+  lint:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: ./.github/actions/setup
+      # ajouter le run ( le script du job )
+
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: ./.github/actions/setup
+        # ajouter le run ( le script du job )
+
+
+  unit-tests:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: ./.github/actions/setup
+        # ajouter le run ( le script du job )
+    needs: build
+
+
+  sonar:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: ./.github/actions/setup
+        # ajouter le run ( le script du job )
+    needs: unit-tests
