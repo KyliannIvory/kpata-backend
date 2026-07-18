@@ -4,12 +4,18 @@ on: [push, pull_request]
 
 jobs:
   lint:
+    name: checkstyle
     runs-on: ubuntu-22.04
     steps:
-      - uses: ./.github/actions/setup
-      # ajouter le run ( le script du job )
+      - name: setup
+        uses: ./.github/actions/setup
+      - name: execution of the checkstyle command
+        run: ./mvnw checkstyle:check
+        shell: bash
+
 
   build:
+    name: builder
     runs-on: ubuntu-22.04
     steps:
       - uses: ./.github/actions/setup
@@ -17,14 +23,16 @@ jobs:
 
 
   unit-tests:
+    name: unit tests checker
     runs-on: ubuntu-22.04
     steps:
       - uses: ./.github/actions/setup
         # ajouter le run ( le script du job )
-    needs: build
+    needs: [build, lint]
 
 
   sonar:
+    name: code quality checker
     runs-on: ubuntu-22.04
     steps:
       - uses: ./.github/actions/setup
