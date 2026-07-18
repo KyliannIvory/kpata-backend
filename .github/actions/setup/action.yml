@@ -4,8 +4,6 @@ description: setup
 runs:
   using: "composite"
   steps:
-    - name: Checkout code
-      uses: actions/checkout@v6
     - name: Configure java environment
       uses: actions/setup-java@v4
       with:
