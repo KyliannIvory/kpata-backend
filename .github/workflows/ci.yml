@@ -21,34 +21,41 @@ jobs:
         run: ./mvnw checkstyle:check
         shell: bash
 
-
-  build:
+  build-and-test:
     name: builder
     runs-on: ubuntu-22.04
+    needs: lint
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
-      - uses: ./.github/actions/setup
-        # ajouter le run ( le script du job )
-
-
-  unit-tests:
-    name: unit tests checker
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-      - uses: ./.github/actions/setup
-        # ajouter le run ( le script du job )
-    needs: [build, lint]
-
+      - name: setup
+        uses: ./.github/actions/setup
+      - name: build and run tests
+        run: ./mvnw clean test
+        shell: bash
+        # ajouter les fichier de rapport de jacoco pour que sonar puisse les récupérer
 
   sonar:
     name: code quality checker
     runs-on: ubuntu-22.04
+    needs: build-and-test
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
-      - uses: ./.github/actions/setup
-        # ajouter le run ( le script du job )
-    needs: unit-tests
+        with:
+          fetch-depth: 0
+      - name: setup
+        uses: ./.github/actions/setup
+      - name: launch quality tests
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
+        run: |
+          ./mvnw sonar:sonar \
+            -Dsonar.qualitygate.wait=true \
+            -Dsonar.organization=kyliannivory \
+            -Dsonar.projectKey=KyliannIvory_kpata-backend \
+            -Dsonar.host.url=$SONAR_HOST_URL \
+            -Dsonar.token=$SONAR_TOKEN \
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
+            --no-transfer-progress
