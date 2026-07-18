@@ -12,12 +12,16 @@ public class IvoryCoastPhoneValidator implements ConstraintValidator<IvoryCoastP
     @Override
     public boolean isValid(String value, ConstraintValidatorContext context) {
 
-        if (value == null || value.trim().isEmpty()) {
+        if (value == null || value
+                .trim()
+                .isEmpty()) {
             return true;
         }
         try {
             Phonenumber.PhoneNumber number = phoneUtil.parse(value, "CI");
-            return phoneUtil.isValidNumber(number) && phoneUtil.getRegionCodeForNumber(number).equals("CI");
+            return phoneUtil.isValidNumber(number) && phoneUtil
+                    .getRegionCodeForNumber(number)
+                    .equals("CI");
         } catch (Exception e) {
             return false;
         }

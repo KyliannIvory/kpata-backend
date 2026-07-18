@@ -11,7 +11,9 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface IvoryCoastPhone {
 
-    String message() default "Numéro de téléphone ivoirien invalide (ex : +2250701020304 ou 0701020304)";
+    @SuppressWarnings("checkstyle:OperatorWrap") String message() default
+            "Numéro de téléphone ivoirien invalide (ex : +2250701020304 ou " +
+                    "0701020304)";
 
     Class<?>[] groups() default {};
 

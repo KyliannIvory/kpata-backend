@@ -11,8 +11,8 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Constraint(validatedBy = {})
 @Email(
-    regexp = "^[a-zA-Z0-9._%]+@[a-zA-Z0-9._]+\\.[a-zA-Z]{2,}$",
-    message = "Please provide a valid email address."
+        regexp = "^[a-zA-Z0-9._%]+@[a-zA-Z0-9._]+\\.[a-zA-Z]{2,}$",
+        message = "Please provide a valid email address."
 )
 public @interface StrictEmail {
 

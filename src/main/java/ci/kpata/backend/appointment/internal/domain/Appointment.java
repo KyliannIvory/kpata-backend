@@ -10,7 +10,8 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Getter @Setter
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "appointments")
@@ -31,7 +32,7 @@ class Appointment extends BaseEntity {
     @Column(name = "treatment_id", nullable = false)
     private UUID treatmentId;
 
-    @Column(name ="salon_id", nullable = false)
+    @Column(name = "salon_id", nullable = false)
     private UUID salonId;
 
     @NotNull

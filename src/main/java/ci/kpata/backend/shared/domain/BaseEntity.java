@@ -22,7 +22,7 @@ public abstract class BaseEntity {
     private Instant createdAt;
 
     @LastModifiedDate
-    @Column(name = "updated_at" , nullable = false)
+    @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
 }
