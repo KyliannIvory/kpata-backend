@@ -31,9 +31,13 @@ jobs:
       - name: setup
         uses: ./.github/actions/setup
       - name: build and run tests
-        run: ./mvnw clean test
+        run: ./mvnw clean prepare-package --no-transfer-progress -P unit-tests
         shell: bash
-        # ajouter les fichier de rapport de jacoco pour que sonar puisse les récupérer
+      - name: upload jacoco xml file
+        uses: actions/upload-artifact@v7
+        with:
+          name: 'jacoco reports file'
+          path: target/site/jacoco/jacoco.xml
 
   sonar:
     name: code quality checker
@@ -46,6 +50,11 @@ jobs:
           fetch-depth: 0
       - name: setup
         uses: ./.github/actions/setup
+      - name: download jacoco xml file
+        uses: actions/download-artifact@v8
+        with:
+          name: 'jacoco reports file'
+          path: target/site/jacoco/
       - name: launch quality tests
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -59,3 +68,4 @@ jobs:
             -Dsonar.token=$SONAR_TOKEN \
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
             --no-transfer-progress
+        shell: bash
