@@ -1,0 +1,12 @@
+name: setup
+author: kyliann
+description: setup
+runs:
+  using: "composite"
+  steps:
+    - name: Configure java environment
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: maven

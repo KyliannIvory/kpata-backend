@@ -12,7 +12,8 @@ import org.hibernate.annotations.UuidGenerator;
 import java.util.UUID;
 
 @Entity
-@Getter @Setter
+@Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
@@ -37,7 +38,7 @@ class Salon extends BaseEntity {
     private String description;
 
     @IvoryCoastPhone
-    @Column(name = "phone_number",nullable = false, length = 20)
+    @Column(name = "phone_number", nullable = false, length = 20)
     private String phoneNumber;
 
     @Column(name = "owner_id", nullable = false)

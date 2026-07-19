@@ -16,7 +16,8 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 @Entity
-@Getter @Setter
+@Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder

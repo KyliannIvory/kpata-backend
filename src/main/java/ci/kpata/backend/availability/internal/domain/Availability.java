@@ -11,7 +11,8 @@ import java.time.LocalTime;
 import java.util.UUID;
 
 @Entity
-@Getter @Setter
+@Getter
+@Setter
 @Table(name = "availabilities")
 @NoArgsConstructor
 @AllArgsConstructor

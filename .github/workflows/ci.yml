@@ -1,0 +1,74 @@
+name: ci.yml
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint:
+    name: checkstyle
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+      - name: setup
+        uses: ./.github/actions/setup
+      - name: execution of the checkstyle command
+        run: ./mvnw checkstyle:check
+        shell: bash
+
+  build-and-test:
+    name: builder
+    runs-on: ubuntu-22.04
+    needs: lint
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+      - name: setup
+        uses: ./.github/actions/setup
+      - name: build and run tests
+        run: ./mvnw clean prepare-package --no-transfer-progress -P unit-tests
+        shell: bash
+      - name: upload build artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: 'build artifacts'
+          path: |
+            target/site/jacoco/jacoco.xml
+            target/classes
+
+  sonar:
+    name: code quality checker
+    runs-on: ubuntu-22.04
+    needs: build-and-test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: setup
+        uses: ./.github/actions/setup
+      - name: download build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: 'build artifacts'
+          path: target/
+      - name: launch quality tests
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
+        run: |
+          ./mvnw sonar:sonar \
+            -Dsonar.qualitygate.wait=true \
+            -Dsonar.java.binaries=target/classes \
+            -Dsonar.organization=kyliannivory \
+            -Dsonar.projectKey=KyliannIvory_kpata-backend \
+            -Dsonar.host.url=$SONAR_HOST_URL \
+            -Dsonar.token=$SONAR_TOKEN \
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
+            --no-transfer-progress
+        shell: bash

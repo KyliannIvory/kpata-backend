@@ -11,7 +11,8 @@ import lombok.Builder;
 
 
 @Embeddable
-@Getter @Setter
+@Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder

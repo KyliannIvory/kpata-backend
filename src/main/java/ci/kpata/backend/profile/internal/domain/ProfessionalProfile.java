@@ -10,7 +10,8 @@ import lombok.*;
 import java.util.UUID;
 
 @Entity
-@Getter @Setter
+@Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "professional_profiles")
@@ -21,7 +22,7 @@ class ProfessionalProfile extends BaseEntity {
     @Column(name = "user_id", updatable = false, nullable = false)
     private UUID userId;
 
-    @Column(name= "salon_id", nullable = false)
+    @Column(name = "salon_id", nullable = false)
     private UUID salonId;
 
     @Column(columnDefinition = "TEXT")
