@@ -33,16 +33,13 @@ jobs:
       - name: build and run tests
         run: ./mvnw clean prepare-package --no-transfer-progress -P unit-tests
         shell: bash
-      - name: upload jacoco xml file
+      - name: upload build artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: 'jacoco reports file'
-          path: target/site/jacoco/jacoco.xml
-      - name: upload compiled classes
-        uses: actions/upload-artifact@v7
-        with:
-          name: 'compiled classes'
-          path: target/classes
+          name: 'build artifacts'
+          path: |
+            target/site/jacoco/jacoco.xml
+            target/classes
 
   sonar:
     name: code quality checker
@@ -55,16 +52,11 @@ jobs:
           fetch-depth: 0
       - name: setup
         uses: ./.github/actions/setup
-      - name: download jacoco xml file
+      - name: download build artifacts
         uses: actions/download-artifact@v8
         with:
-          name: 'jacoco reports file'
-          path: target/site/jacoco/
-      - name: download compiled classes
-        uses: actions/download-artifact@v8
-        with:
-          name: 'compiled classes'
-          path: target/classes
+          name: 'build artifacts'
+          path: target/
       - name: launch quality tests
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
