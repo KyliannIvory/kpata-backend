@@ -38,6 +38,11 @@ jobs:
         with:
           name: 'jacoco reports file'
           path: target/site/jacoco/jacoco.xml
+      - name: upload compiled classes
+        uses: actions/upload-artifact@v7
+        with:
+          name: 'compiled classes'
+          path: target/classes
 
   sonar:
     name: code quality checker
@@ -55,6 +60,11 @@ jobs:
         with:
           name: 'jacoco reports file'
           path: target/site/jacoco/
+      - name: download compiled classes
+        uses: actions/download-artifact@v8
+        with:
+          name: 'compiled classes'
+          path: target/classes
       - name: launch quality tests
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -62,6 +72,7 @@ jobs:
         run: |
           ./mvnw sonar:sonar \
             -Dsonar.qualitygate.wait=true \
+            -Dsonar.java.binaries=target/classes \
             -Dsonar.organization=kyliannivory \
             -Dsonar.projectKey=KyliannIvory_kpata-backend \
             -Dsonar.host.url=$SONAR_HOST_URL \
