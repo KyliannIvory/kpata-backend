@@ -6,6 +6,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import org.jspecify.annotations.NonNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -17,28 +19,12 @@ import org.springframework.web.filter.OncePerRequestFilter;
  */
 public class JwtFilter extends OncePerRequestFilter {
 
-    private static final String BEARER_PREFIX = "Bearer ";
+    private static final Logger log = LoggerFactory.getLogger(JwtFilter.class);
 
     private final JwtProvider jwtProvider;
 
     public JwtFilter(JwtProvider provider) {
         jwtProvider = provider;
-    }
-
-    /**
-     * Reads the {@code Authorization} header and strips the {@code Bearer } prefix.
-     *
-     * @return the raw token, or {@code null} if the header is absent or not a bearer token
-     */
-    private String extractToken(HttpServletRequest req) {
-
-        String bearerToken = req.getHeader("Authorization");
-
-        if (bearerToken != null && bearerToken.startsWith(BEARER_PREFIX)) {
-
-            return bearerToken.substring(BEARER_PREFIX.length());
-        }
-        return null;
     }
 
     /**
@@ -52,7 +38,7 @@ public class JwtFilter extends OncePerRequestFilter {
                                     @NonNull FilterChain filterChain)
             throws ServletException, IOException {
 
-        String token = extractToken(request);
+        String token = JwtProvider.extractBearerToken(request.getHeader("Authorization"));
 
         try {
             if (token != null) {
@@ -61,8 +47,17 @@ public class JwtFilter extends OncePerRequestFilter {
                 SecurityContextHolder
                         .getContext()
                         .setAuthentication(auth);
+
+                log.debug("Authenticated {} {} as subject={}",
+                        request.getMethod(), request.getRequestURI(), auth.getName());
+            } else {
+                log.debug("No bearer token on {} {}, proceeding unauthenticated",
+                        request.getMethod(), request.getRequestURI());
             }
         } catch (InvalidTokenException e) {
+
+            log.warn("Rejecting {} {}: {}",
+                    request.getMethod(), request.getRequestURI(), e.getMessage());
 
             SecurityContextHolder.clearContext();
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, e.getMessage());

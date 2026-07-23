@@ -1,7 +1,7 @@
 package ci.kpata.backend.auth.internal.jwt;
 
 import ci.kpata.backend.auth.internal.domain.Role;
-import ci.kpata.backend.auth.internal.dto.UserDto;
+import ci.kpata.backend.auth.internal.dto.UserClaimsDto;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -23,6 +23,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Issues, parses and revokes JWT access tokens.
@@ -44,9 +46,13 @@ import org.springframework.stereotype.Component;
 @Component
 public class JwtProvider {
 
+    private static final Logger log = LoggerFactory.getLogger(JwtProvider.class);
+
     private static final long CLEANUP_INTERVAL_MS = 900000;
 
     private static final String ROLES_CLAIM = "auth";
+
+    private static final String BEARER_PREFIX = "Bearer ";
 
     @Value("${jwt.secret}")
     private String secretText;
@@ -75,7 +81,7 @@ public class JwtProvider {
      *
      * @return the compact, signed JWT string
      */
-    public String createToken(UserDto userDto) {
+    public String createToken(UserClaimsDto userDto) {
 
         Set<String> roleNames = userDto
                 .roles()
@@ -87,7 +93,7 @@ public class JwtProvider {
         Date now = new Date();
         Date validity = new Date(now.getTime() + validityInMilliseconds);
 
-        return Jwts
+        String token = Jwts
                 .builder()
                 .subject(userDto.phoneNumber())
                 .claim(ROLES_CLAIM, roleNames)
@@ -95,6 +101,25 @@ public class JwtProvider {
                 .expiration(validity)
                 .signWith(secretKey)
                 .compact();
+
+        log.info("Token issued for subject={}, roles={}, expiresAt={}",
+                userDto.phoneNumber(), roleNames, validity);
+
+        return token;
+    }
+
+    /**
+     * Extracts the raw token from an {@code Authorization} header value, stripping the
+     * {@code Bearer } prefix. The single place that knows this header format, so
+     * {@code JwtFilter} and {@code AuthService} don't each parse it their own way.
+     *
+     * @return the raw token, or {@code null} if the header is absent or not a bearer token
+     */
+    public static String extractBearerToken(String authorizationHeader) {
+        if (authorizationHeader != null && authorizationHeader.startsWith(BEARER_PREFIX)) {
+            return authorizationHeader.substring(BEARER_PREFIX.length());
+        }
+        return null;
     }
 
     /**
@@ -113,6 +138,7 @@ public class JwtProvider {
                     .parseSignedClaims(token)
                     .getPayload();
         } catch (JwtException | IllegalArgumentException e) {
+            log.warn("Rejected invalid or expired JWT: {}", e.getMessage());
             throw new InvalidTokenException("Expired or invalid JWT token");
         }
     }
@@ -135,8 +161,10 @@ public class JwtProvider {
      * @throws InvalidTokenException if the token is invalid or expired
      */
     public void revokeToken(String token) {
-        Date expiration = parseAndVerify(token).getExpiration();
-        revokedTokens.put(token, expiration);
+        Claims claims = parseAndVerify(token);
+        revokedTokens.put(token, claims.getExpiration());
+        log.info("Token revoked for subject={}, expiresAt={}",
+                claims.getSubject(), claims.getExpiration());
     }
 
     /**
@@ -148,9 +176,12 @@ public class JwtProvider {
     @Scheduled(fixedRate = CLEANUP_INTERVAL_MS)
     void purgeExpiredRevokedTokens() {
         Date now = new Date();
+        int sizeBefore = revokedTokens.size();
         revokedTokens
                 .values()
                 .removeIf(expiration -> expiration.before(now));
+        log.debug("Purged {} expired entries from the revoked-token blacklist ({} remaining)",
+                sizeBefore - revokedTokens.size(), revokedTokens.size());
     }
 
     /**
@@ -163,6 +194,7 @@ public class JwtProvider {
     public Authentication getAuthentication(String token) {
 
         if (revokedTokens.containsKey(token)) {
+            log.warn("Rejected a revoked token");
             throw new InvalidTokenException("Token has been revoked");
         }
 
@@ -173,6 +205,9 @@ public class JwtProvider {
                 .map(Object::toString)
                 .map(SimpleGrantedAuthority::new)
                 .collect(Collectors.toList());
+
+        log.debug("Authenticated subject={} with authorities={}",
+                claims.getSubject(), authorities);
 
         return new UsernamePasswordAuthenticationToken(claims.getSubject(), "", authorities);
     }
