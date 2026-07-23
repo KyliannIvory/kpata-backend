@@ -16,3 +16,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
+
+jwt:
+  secret: ${JWT_SECRET:my-very-big-secret-phrase-for-signature}
+  expiration: 300000
