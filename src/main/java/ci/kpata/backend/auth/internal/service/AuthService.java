@@ -8,6 +8,7 @@ import ci.kpata.backend.auth.internal.dto.SignupRequestDto;
 import ci.kpata.backend.auth.internal.dto.UserClaimsDto;
 import ci.kpata.backend.auth.internal.jwt.JwtProvider;
 import ci.kpata.backend.auth.internal.repository.UserRepository;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -15,6 +16,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
@@ -66,7 +68,9 @@ public class AuthService {
             throw new InvalidCredentialsException("Invalid credentials", e);
         }
 
-        Set<Role> roles = result
+        UserDetails userDetails = (UserDetails) result.getPrincipal();
+        Set<Role> roles = Objects
+                .requireNonNull(userDetails, "Authenticated principal must not be null")
                 .getAuthorities()
                 .stream()
                 .map(GrantedAuthority::getAuthority)

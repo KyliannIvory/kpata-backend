@@ -81,9 +81,9 @@ public class JwtProvider {
      *
      * @return the compact, signed JWT string
      */
-    public String createToken(UserClaimsDto userDto) {
+    public String createToken(UserClaimsDto claimsDto) {
 
-        Set<String> roleNames = userDto
+        Set<String> roleNames = claimsDto
                 .roles()
                 .stream()
                 .filter(Objects::nonNull)
@@ -95,7 +95,7 @@ public class JwtProvider {
 
         String token = Jwts
                 .builder()
-                .subject(userDto.phoneNumber())
+                .subject(claimsDto.phoneNumber())
                 .claim(ROLES_CLAIM, roleNames)
                 .issuedAt(now)
                 .expiration(validity)
@@ -103,7 +103,7 @@ public class JwtProvider {
                 .compact();
 
         log.info("Token issued for subject={}, roles={}, expiresAt={}",
-                userDto.phoneNumber(), roleNames, validity);
+                claimsDto.phoneNumber(), roleNames, validity);
 
         return token;
     }
