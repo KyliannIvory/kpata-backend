@@ -44,7 +44,18 @@ public class JwtWebSecurityConfig {
         this.jwtProvider = jwtProvider;
     }
 
-    /** Allows all origins/methods/headers; tighten to known origins before production. */
+    /**
+     * Allows all origins/methods/headers; tighten to known origins before production.
+     * <p>
+     * TODO(auth): remplacer {@code "*"} par la ou les origines réelles de ton frontend
+     * (ex. {@code http://localhost:5173} en dev, puis le domaine de prod), idéalement
+     * via une propriété configurable comme {@code jwt.secret} l'est déjà (@Value avec
+     * valeur par défaut), pour ne pas recompiler à chaque changement d'environnement.
+     * Pas bloquant tant que tu testes uniquement avec curl/Postman (le CORS n'est
+     * appliqué que par les navigateurs), mais ça le devient dès que le frontend appelle
+     * l'API depuis une page ouverte dans un navigateur. Détails :
+     * docs/auth-frontend-readiness.md, section 5.
+     */
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
 
@@ -83,6 +94,12 @@ public class JwtWebSecurityConfig {
 
         http.authorizeHttpRequests(config -> {
 
+            // TODO(auth): ce matcher ne couvre que DispatcherType.FORWARD, pas ERROR — le
+            // forward interne que Spring Boot fait vers /error quand une exception non
+            // interceptée remonte est de type ERROR, pas FORWARD. Conséquence : ce forward
+            // retombe sur anyRequest().authenticated() plus bas et écrase le vrai statut
+            // (409, 400, 404...) par un 401 vide. Analyse complète et correctif :
+            // docs/auth-error-handling.md, §2.1 et TODO 4.
             config
                     .dispatcherTypeMatchers(DispatcherType.FORWARD)
                     .permitAll();

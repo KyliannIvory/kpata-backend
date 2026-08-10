@@ -41,4 +41,17 @@ public class AuthController {
                 .status(HttpStatus.OK)
                 .body(response);
     }
+
+    // TODO(auth): exposer POST /auth/logout.
+    // AuthService#logout(String) existe déjà et fonctionne, mais aucune route ne l'appelle.
+    // Doit rester protégée (ne PAS l'ajouter à permitAll() dans JwtWebSecurityConfig) :
+    // seul l'utilisateur authentifié doit pouvoir révoquer SON propre token.
+    // Détail complet + squelette : docs/auth-error-handling.md, TODO 6.
+
+    // TODO(auth): exposer GET /auth/me.
+    // Doit retourner les infos de l'utilisateur courant (jamais le password !), à partir
+    // du token présent sur la requête. Nécessaire pour que le frontend sache "qui est
+    // connecté" après un refresh de page sans avoir à décoder le JWT côté client.
+    // Concepts, options de conception et critères d'acceptation détaillés :
+    // docs/auth-frontend-readiness.md, section 2.
 }

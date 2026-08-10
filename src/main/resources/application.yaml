@@ -19,4 +19,8 @@ spring:
 
 jwt:
   secret: ${JWT_SECRET:my-very-big-secret-phrase-for-signature}
+  # TODO(auth): 300000 ms = 5 minutes, et il n'existe aucun mécanisme de refresh token.
+  # Le frontend sera donc déconnecté (401) toutes les 5 minutes sans avertissement.
+  # Décision à prendre consciemment (pas juste "mettre une grosse valeur au hasard) :
+  # voir docs/auth-frontend-readiness.md, section 3, pour les options et leurs compromis.
   expiration: 300000
