@@ -2,12 +2,14 @@ package ci.kpata.backend.auth.internal.security;
 
 import ci.kpata.backend.auth.internal.jwt.JwtFilter;
 import ci.kpata.backend.auth.internal.jwt.JwtProvider;
+import ci.kpata.backend.shared.web.ErrorResponseWriter;
 import jakarta.servlet.DispatcherType;
-import jakarta.servlet.http.HttpServletResponse;
 import java.util.Arrays;
+import java.util.Objects;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -40,8 +42,11 @@ public class JwtWebSecurityConfig {
 
     private final JwtProvider jwtProvider;
 
-    public JwtWebSecurityConfig(JwtProvider jwtProvider) {
+    private final ErrorResponseWriter errorResponseWriter;
+
+    public JwtWebSecurityConfig(JwtProvider jwtProvider, ErrorResponseWriter errorResponseWriter) {
         this.jwtProvider = jwtProvider;
+        this.errorResponseWriter = errorResponseWriter;
     }
 
     /**
@@ -82,26 +87,41 @@ public class JwtWebSecurityConfig {
         http.cors(Customizer.withDefaults());
 
         // Returns a plain 401 instead of a login-page redirect when auth is required but
-        // missing/invalid.
+        // missing/invalid. Runs in the Spring Security filter chain, before
+        // DispatcherServlet, so GlobalExceptionHandler can't handle this case — the
+        // ErrorResponseWriter call below builds the same ErrorResponseDto JSON by hand.
+        // Prefers the specific reason JwtFilter stashed (e.g. "Expired or invalid JWT
+        // token") when there was actually a rejected token; otherwise this is a plain
+        // "no credentials at all" failure, where authException.getMessage() is null, hence
+        // the generic fallback.
         http.exceptionHandling(exceptionHandling ->
                 exceptionHandling.authenticationEntryPoint(
                         (request,
                          response,
-                         authException) ->
+                         authException) -> {
 
-                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
-                                        authException.getMessage())));
+                            String message = Objects.requireNonNullElse(
+                                    (String) request.getAttribute(JwtFilter.TOKEN_ERROR_ATTRIBUTE),
+                                    Objects.requireNonNullElse(
+                                            authException.getMessage(),
+                                            "Authentication is required to access this resource"));
+
+                            errorResponseWriter.write(
+                                    response, HttpStatus.UNAUTHORIZED, message, request.getRequestURI());
+                        }));
 
         http.authorizeHttpRequests(config -> {
 
-            // TODO(auth): ce matcher ne couvre que DispatcherType.FORWARD, pas ERROR — le
-            // forward interne que Spring Boot fait vers /error quand une exception non
-            // interceptée remonte est de type ERROR, pas FORWARD. Conséquence : ce forward
-            // retombe sur anyRequest().authenticated() plus bas et écrase le vrai statut
-            // (409, 400, 404...) par un 401 vide. Analyse complète et correctif :
-            // docs/auth-error-handling.md, §2.1 et TODO 4.
+            // Autorise le forward ET le dispatch ERROR internes de Spring Boot (vers /error)
+            // sans authentification : sinon anyRequest().authenticated() plus bas les
+            // rejette avec un 401 vide, écrasant le vrai statut (404, 405, 500...) d'une
+            // exception non interceptée par GlobalExceptionHandler. Vérifié par curl le
+            // 2026-08-14 : route inexistante + token valide -> 404 (plus 401). Reste un
+            // TODO : BasicErrorController répond bien sur /error, mais avec son propre
+            // format JSON (pas ErrorResponseDto, pas de message/fieldErrors) — voir
+            // docs/auth-error-handling.md, TODO 4, pour le correctif restant.
             config
-                    .dispatcherTypeMatchers(DispatcherType.FORWARD)
+                    .dispatcherTypeMatchers(DispatcherType.FORWARD, DispatcherType.ERROR)
                     .permitAll();
 
             config

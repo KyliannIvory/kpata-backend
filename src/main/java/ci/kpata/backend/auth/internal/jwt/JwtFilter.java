@@ -21,6 +21,13 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(JwtFilter.class);
 
+    /**
+     * Request attribute key under which the reason a token was rejected is stashed, so
+     * {@code JwtWebSecurityConfig}'s {@code authenticationEntryPoint} can surface it —
+     * this class itself never rejects the request (see {@link #doFilterInternal}).
+     */
+    public static final String TOKEN_ERROR_ATTRIBUTE = "ci.kpata.backend.auth.tokenError";
+
     private final JwtProvider jwtProvider;
 
     public JwtFilter(JwtProvider provider) {
@@ -29,8 +36,13 @@ public class JwtFilter extends OncePerRequestFilter {
 
     /**
      * Validates the request's token, if any, and sets the resulting {@link Authentication}
-     * on the security context when it's valid. A revoked, expired or malformed token
-     * short-circuits the filter chain with a 401 instead of propagating the exception.
+     * on the security context when it's valid. This class never rejects the request itself:
+     * a revoked, expired or malformed token is treated the same as no token at all — the
+     * security context is left empty and the filter chain proceeds regardless. Whether that
+     * matters is decided further down the chain, by Spring Security's authorization rules
+     * (see {@code JwtWebSecurityConfig#filterChain}): a public route proceeds anonymously,
+     * a protected route gets rejected by the {@code authenticationEntryPoint}, which reads
+     * {@link #TOKEN_ERROR_ATTRIBUTE} to report the specific reason when there is one.
      */
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
@@ -56,12 +68,11 @@ public class JwtFilter extends OncePerRequestFilter {
             }
         } catch (InvalidTokenException e) {
 
-            log.warn("Rejecting {} {}: {}",
+            log.warn("Ignoring invalid token on {} {}: {}",
                     request.getMethod(), request.getRequestURI(), e.getMessage());
 
             SecurityContextHolder.clearContext();
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, e.getMessage());
-            return;
+            request.setAttribute(TOKEN_ERROR_ATTRIBUTE, e.getMessage());
         }
 
         filterChain.doFilter(request, response);
