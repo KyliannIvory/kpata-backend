@@ -68,6 +68,12 @@ public class AuthService {
             throw new InvalidCredentialsException("Invalid credentials", e);
         }
 
+        // Safe here specifically: authenticationManager is backed by a
+        // DaoAuthenticationProvider (see AuthenticationConfig), which always returns the
+        // UserDetails loaded by UserDetailsServiceImpl as the principal. This does NOT hold
+        // for every Authentication in the app — JwtProvider#getAuthentication builds one
+        // with a raw String principal instead, for every request JwtFilter authenticates.
+        // Don't copy this cast onto SecurityContextHolder's current authentication elsewhere.
         UserDetails userDetails = (UserDetails) result.getPrincipal();
         Set<Role> roles = Objects
                 .requireNonNull(userDetails, "Authenticated principal must not be null")

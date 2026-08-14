@@ -188,6 +188,16 @@ public class JwtProvider {
      * Builds a Spring Security {@link Authentication} directly from a token's claims —
      * no database lookup is performed, so the resulting authorities reflect the roles
      * that were embedded in the token when it was issued.
+     * <p>
+     * The principal here is the raw subject {@link String} (the phone number), <em>not</em>
+     * a {@link org.springframework.security.core.userdetails.UserDetails} — unlike the
+     * {@code Authentication} that {@code AuthService#login} gets back from
+     * {@code AuthenticationManager}, whose principal is a {@code UserDetails}. Since
+     * {@link ci.kpata.backend.auth.internal.jwt.JwtFilter} installs the {@code Authentication}
+     * returned by this method into {@code SecurityContextHolder} for every JWT-authenticated
+     * request, any code that reads {@code SecurityContextHolder}'s current authentication
+     * (e.g. a future {@code GET /auth/me}) must not assume a {@code UserDetails} principal —
+     * casting it that way will throw {@link ClassCastException}.
      *
      * @throws InvalidTokenException if the token was revoked, is expired, or is invalid
      */
