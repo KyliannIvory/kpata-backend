@@ -31,7 +31,7 @@ au token, elle, est déjà tranchée **avant** `DispatcherServlet` (détail en s
 
 | Composant | Rôle | Fichier |
 |---|---|---|
-| `AuthController` | Expose `/auth/signup`, `/auth/login` | `auth/AuthController.java` |
+| `AuthController` | Expose `/auth/signup`, `/auth/login`, `/auth/logout` (protégée) | `auth/AuthController.java` |
 | `AuthService` | Règles métier : vérifie le doublon, authentifie, émet le token | `auth/internal/service/AuthService.java` |
 | `JwtProvider` | Émet/valide/révoque les JWT ; blacklist des tokens révoqués en mémoire | `auth/internal/jwt/JwtProvider.java` |
 | `JwtFilter` | Lit le token sur chaque requête, peuple `SecurityContextHolder` si valide | `auth/internal/jwt/JwtFilter.java` |
@@ -204,7 +204,21 @@ intégralité — reste `TODO LoginRequestDto` (hors périmètre de ce document,
 `auth-frontend-readiness.md` §0 et §4) avant de passer à la Phase 1 (`/auth/logout`,
 `/auth/me`).
 
-<!-- Prochaine entrée : TODO LoginRequestDto ou Phase 1 (/auth/logout, /auth/me) -->
+### 2026-08-14 — TODO 6 (clôture) : `POST /auth/logout` exposé
+
+`AuthController` expose maintenant `POST /auth/logout`, appelant `AuthService.logout(...)`
+(déjà existant et testé). Route volontairement absente de `permitAll()` — reste protégée
+par `anyRequest().authenticated()`, pour que seul l'appelant déjà authentifié par un token
+puisse révoquer *ce même* token (pas de risque de révoquer le token de quelqu'un d'autre).
+Vérifié par `curl` : sans header `Authorization` → `401` avant même d'atteindre le
+controller ; token valide → `204 No Content` ; le même token réutilisé ensuite sur une
+route protégée → `401 "Token has been revoked"` (révocation immédiate) ; logout une seconde
+fois avec ce token déjà révoqué → `401` propre. `./mvnw test -P unit-tests` toujours vert
+(27 tests). Reste noté en review : import étoile (`import
+org.springframework.web.bind.annotation.*`) dans `AuthController` — signalé par checkstyle
+en `warning`, ne bloque pas la CI, à nettoyer quand l'occasion se présente.
+
+<!-- Prochaine entrée : TODO LoginRequestDto ou GET /auth/me -->
 
 ## 6. État d'avancement
 
@@ -218,6 +232,6 @@ gestion d'erreurs : `docs/auth-error-handling.md`.
 - [x] TODO 3 — erreurs de validation (`@Valid` + JSON malformé)
 - [x] TODO 4 — filet de sécurité (dispatch `ERROR`) + catch-all `Exception.class`
 - [x] TODO 5 — revalidation complète `curl` (8/8 scénarios conformes)
-- [ ] TODO 6 — `POST /auth/logout`
+- [x] TODO 6 — `POST /auth/logout` (fait et vérifié)
 - [ ] `GET /auth/me`, durée de vie du token, CORS, tests controller — voir
       `auth-frontend-readiness.md`

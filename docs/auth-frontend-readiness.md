@@ -47,10 +47,8 @@ Détail complet de chaque étape : `docs/auth-error-handling.md`.
 
 ### Phase 1 — Compléter les endpoints auth manquants
 
-- [ ] **`POST /auth/logout`** (`AuthController.java`, TODO déjà posé dans le code, détail :
-      `docs/auth-error-handling.md` TODO 6) — en premier dans cette phase : le service
-      `AuthService.logout(...)` existe et fonctionne déjà (couvert par
-      `AuthServiceTest`), il ne manque que la route. Gain rapide.
+- [x] **`POST /auth/logout`** (fait et vérifié le 2026-08-14, voir `docs/auth-error-handling.md`
+      TODO 6) — route protégée, révocation immédiate confirmée par `curl`.
 - [ ] **`GET /auth/me`** (`AuthController.java`, TODO déjà posé dans le code, détail : §2
       ci-dessous) — après logout : demande plus de travail (nouveau DTO de réponse, aller
       chercher le `User` complet, décider du cas "utilisateur supprimé entre-temps").
@@ -93,7 +91,7 @@ Ces TODO existent dans le code mais ne bloquent rien pour l'instant :
 |---|---|---|
 | Signup / login → token | ✅ fonctionne | `AuthController`, `AuthService` |
 | Erreurs en JSON cohérent (400/401/409...) | ✅ tous les cas corrigés et revalidés de bout en bout par `curl` (8/8 scénarios, TODO 5) | `docs/auth-error-handling.md` |
-| `POST /auth/logout` | ⚠️ le service existe, la route non | `docs/auth-error-handling.md`, TODO 6 |
+| `POST /auth/logout` | ✅ fait et vérifié (route protégée, révocation immédiate) | `docs/auth-error-handling.md`, TODO 6 |
 | `GET /auth/me` | ❌ n'existe pas | §2 ci-dessous |
 | Validation du login (`LoginRequestDto`) | ❌ aucune contrainte | §4 ci-dessous |
 | Durée de vie du token / renouvellement | ⚠️ 5 min, pas de refresh | §3 ci-dessous |

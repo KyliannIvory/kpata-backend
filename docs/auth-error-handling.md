@@ -113,7 +113,7 @@ vérifier si la précédente est en place.
       JSON malformé (`HttpMessageNotReadableException`) faits
 - [x] **TODO 4 — Corriger le filtre de sécurité en filet de sécurité (dispatch `ERROR`)**
 - [x] **TODO 5 — Revalider tous les scénarios avec `curl`**
-- [ ] **TODO 6 (bonus, hors périmètre du bug) — Exposer `/auth/logout`**
+- [x] **TODO 6 (bonus, hors périmètre du bug) — Exposer `/auth/logout`**
 
 ---
 
@@ -499,11 +499,18 @@ publique plutôt que de bloquer la requête (comportement ajouté après TODO 2b
 
 ---
 
-### TODO 6 (bonus, indépendant du bug 401) — Exposer `/auth/logout`
+### TODO 6 (bonus, indépendant du bug 401) — Exposer `/auth/logout` ✅ fait
 
-**Constat :** `AuthService.logout(String authorizationValue)` existe déjà et fonctionne
-(il révoque le token dans la blacklist en mémoire de `JwtProvider`), mais **aucune route
-ne l'appelle** — `AuthController` n'a que `signup` et `login`.
+**État actuel (vérifié le 2026-08-14) :** `AuthController` expose `POST /auth/logout`,
+protégée (absente de `permitAll()`). Vérifié par `curl` : sans header `Authorization` →
+`401` (bloqué avant même le controller) ; avec un token valide → `204 No Content` ; le même
+token réutilisé ensuite sur une route protégée → `401 "Token has been revoked"` (révocation
+immédiate confirmée) ; logout une seconde fois avec ce token déjà révoqué → `401` propre,
+pas de crash. `./mvnw test -P unit-tests` toujours vert (27 tests).
+
+**Constat (avant correctif) :** `AuthService.logout(String authorizationValue)` existait
+déjà et fonctionnait (il révoque le token dans la blacklist en mémoire de `JwtProvider`),
+mais aucune route ne l'appelait — `AuthController` n'avait que `signup` et `login`.
 
 **Pourquoi c'est nécessaire pour le frontend :** sans cette route, un "logout" côté
 client ne peut être qu'une suppression locale du token stocké (localStorage/cookie). Le
