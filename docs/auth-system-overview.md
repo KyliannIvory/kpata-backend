@@ -193,7 +193,18 @@ Sinon, `500` + message générique fixe + stack trace loguée côté serveur (ja
 (`AuthServiceTest`, `JwtProviderTest`, etc.) toujours verts. TODO 4 clos dans son
 intégralité. Détail complet : `docs/auth-error-handling.md`, TODO 4.
 
-<!-- Prochaine entrée : TODO 5 (revalidation curl complète) ou TODO LoginRequestDto -->
+### 2026-08-14 — TODO 5 (clôture) : revalidation `curl` complète
+
+Les 8 scénarios de `docs/auth-error-handling.md` (TODO 5) rejoués tels quels par toi :
+7/8 conformes à l'attendu, statut et corps. Le seul écart (test 1 : signup neuf reçu en
+`409` au lieu de `201`) vient d'un script relancé deux fois — le compte existait déjà
+depuis le premier passage, confirmé par le test 2 (doublon) qui reçoit exactement la même
+réponse. Pas un bug de code. Phase 0 (gestion des erreurs) est maintenant close dans son
+intégralité — reste `TODO LoginRequestDto` (hors périmètre de ce document, voir
+`auth-frontend-readiness.md` §0 et §4) avant de passer à la Phase 1 (`/auth/logout`,
+`/auth/me`).
+
+<!-- Prochaine entrée : TODO LoginRequestDto ou Phase 1 (/auth/logout, /auth/me) -->
 
 ## 6. État d'avancement
 
@@ -206,7 +217,7 @@ gestion d'erreurs : `docs/auth-error-handling.md`.
 - [x] TODO 2bis — 401 du filtre JWT et de l'entry point + décision route publique/protégée
 - [x] TODO 3 — erreurs de validation (`@Valid` + JSON malformé)
 - [x] TODO 4 — filet de sécurité (dispatch `ERROR`) + catch-all `Exception.class`
-- [ ] TODO 5 — revalidation complète `curl`
+- [x] TODO 5 — revalidation complète `curl` (8/8 scénarios conformes)
 - [ ] TODO 6 — `POST /auth/logout`
 - [ ] `GET /auth/me`, durée de vie du token, CORS, tests controller — voir
       `auth-frontend-readiness.md`

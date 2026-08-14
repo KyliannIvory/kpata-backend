@@ -43,7 +43,7 @@ Détail complet de chaque étape : `docs/auth-error-handling.md`.
       valider une fois puis de le re-tester plus tard quand tu ajouteras les annotations.
 - [x] **TODO 4** — filet de sécurité, `dispatcherTypeMatchers(FORWARD, ERROR)` +
       catch-all `Exception.class` (voir `docs/auth-error-handling.md` TODO 4)
-- [ ] **TODO 5** — revalider tous les scénarios `curl`
+- [x] **TODO 5** — revalider tous les scénarios `curl` (fait le 2026-08-14, 8/8 conformes)
 
 ### Phase 1 — Compléter les endpoints auth manquants
 
@@ -92,7 +92,7 @@ Ces TODO existent dans le code mais ne bloquent rien pour l'instant :
 | Besoin frontend | État actuel | Où creuser |
 |---|---|---|
 | Signup / login → token | ✅ fonctionne | `AuthController`, `AuthService` |
-| Erreurs en JSON cohérent (400/401/409...) | ⚠️ tous les cas connus corrigés (409/401/400 validation/JSON malformé, 404/405 via le catch-all) ; reste la revalidation `curl` complète de bout en bout (TODO 5) | `docs/auth-error-handling.md` |
+| Erreurs en JSON cohérent (400/401/409...) | ✅ tous les cas corrigés et revalidés de bout en bout par `curl` (8/8 scénarios, TODO 5) | `docs/auth-error-handling.md` |
 | `POST /auth/logout` | ⚠️ le service existe, la route non | `docs/auth-error-handling.md`, TODO 6 |
 | `GET /auth/me` | ❌ n'existe pas | §2 ci-dessous |
 | Validation du login (`LoginRequestDto`) | ❌ aucune contrainte | §4 ci-dessous |

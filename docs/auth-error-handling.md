@@ -112,7 +112,7 @@ vérifier si la précédente est en place.
 - [x] **TODO 3 — Gérer proprement les erreurs de validation (`@Valid`)** — `@Valid` et
       JSON malformé (`HttpMessageNotReadableException`) faits
 - [x] **TODO 4 — Corriger le filtre de sécurité en filet de sécurité (dispatch `ERROR`)**
-- [ ] **TODO 5 — Revalider tous les scénarios avec `curl`**
+- [x] **TODO 5 — Revalider tous les scénarios avec `curl`**
 - [ ] **TODO 6 (bonus, hors périmètre du bug) — Exposer `/auth/logout`**
 
 ---
@@ -443,7 +443,15 @@ complète loguée côté serveur — seul endroit où un tel bug pourra jamais �
 
 ---
 
-### TODO 5 — Revalider tous les scénarios avec `curl`
+### TODO 5 — Revalider tous les scénarios avec `curl` ✅ fait
+
+**État actuel (vérifié le 2026-08-14, exécuté par toi) :** les 8 scénarios rejoués tels
+quels, 7/8 conformes à l'attendu (statut **et** corps). Le seul écart — test 1 (signup
+neuf) reçu en `409` au lieu de `201` — s'explique par un script lancé deux fois de suite :
+le compte existait déjà depuis le premier passage. Pas un bug ; le chemin "signup → `201`"
+avait de toute façon déjà été exercé pendant les vérifications de TODO 3/4. Phase 0 est
+maintenant close (reste seulement `TODO LoginRequestDto`, voir `auth-frontend-readiness.md`
+§0).
 
 Une fois TODO 1 à 4 faits, rejoue exactement les mêmes requêtes que celles testées plus
 haut dans la conversation, et vérifie que chaque statut et chaque corps sont corrects :
