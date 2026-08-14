@@ -836,6 +836,25 @@ quels compromis ont été acceptés.
 
 Évite de documenter uniquement ce que le code montre déjà clairement.
 
+Mise à jour automatique après un TODO validé
+
+Dès qu'un TODO du projet est validé/implémenté (que ce TODO soit posé dans le code via
+`TODO(auth)` ou dans un fichier `docs/*.md`), mets à jour automatiquement, sans attendre
+une demande explicite de ma part :
+
+les fichiers `docs/*.md` concernés (cases à cocher, tableaux d'état, journal des décisions
+lorsque le document en a un) ;
+
+la Javadoc de mon implémentation dans le code, lorsque son raisonnement (le pourquoi, un
+piège évité, une décision non évidente) mérite d'être capturé — voir section 4 sur les
+commentaires : uniquement le POURQUOI, jamais une description ligne à ligne de ce que le
+code fait déjà clairement.
+
+Ce sont des mises à jour de fichiers déjà versionnés (pas de suppression, pas d'action
+destructive) : les règles d'attente d'accord des sections 21 et 23 ne s'appliquent pas ici.
+Je reste informé de ce qui a changé dans le résumé de fin de réponse, mais sans blocage
+préalable.
+
 25. Format de réponse préféré
 
 Pour une question technique
