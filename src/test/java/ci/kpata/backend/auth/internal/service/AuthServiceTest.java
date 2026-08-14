@@ -28,6 +28,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
@@ -58,8 +59,17 @@ class AuthServiceTest {
     @Test
     void login_withValidCredentials_returnsTokenBuiltFromAuthenticatedRoles() {
 
+        // AuthenticationManager.authenticate(...) is backed by a DaoAuthenticationProvider,
+        // which returns an Authentication whose principal is the UserDetails loaded by
+        // UserDetailsServiceImpl (see AuthService#login) — not the raw phone number.
+        UserDetails userDetails = org.springframework.security.core.userdetails.User
+                .withUsername(PHONE_NUMBER)
+                .password(PASSWORD)
+                .authorities(List.of(new SimpleGrantedAuthority("CUSTOMER")))
+                .build();
+
         var authenticated = new UsernamePasswordAuthenticationToken(
-                PHONE_NUMBER, PASSWORD, List.of(new SimpleGrantedAuthority("CUSTOMER")));
+                userDetails, PASSWORD, List.of(new SimpleGrantedAuthority("CUSTOMER")));
 
         when(authenticationManager.authenticate(any())).thenReturn(authenticated);
         when(provider.createToken(any())).thenReturn("signed-token");
