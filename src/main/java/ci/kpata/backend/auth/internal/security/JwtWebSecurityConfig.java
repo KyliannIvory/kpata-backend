@@ -4,22 +4,20 @@ import ci.kpata.backend.auth.internal.jwt.JwtFilter;
 import ci.kpata.backend.auth.internal.jwt.JwtProvider;
 import ci.kpata.backend.shared.web.ErrorResponseWriter;
 import jakarta.servlet.DispatcherType;
-import java.util.Arrays;
+
 import java.util.Objects;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
 
 /**
  * Wires the JWT bearer authentication filter into Spring Security and defines
@@ -49,41 +47,14 @@ public class JwtWebSecurityConfig {
         this.errorResponseWriter = errorResponseWriter;
     }
 
-    /**
-     * Allows all origins/methods/headers; tighten to known origins before production.
-     * <p>
-     * TODO(auth): remplacer {@code "*"} par la ou les origines réelles de ton frontend
-     * (ex. {@code http://localhost:5173} en dev, puis le domaine de prod), idéalement
-     * via une propriété configurable comme {@code jwt.secret} l'est déjà (@Value avec
-     * valeur par défaut), pour ne pas recompiler à chaque changement d'environnement.
-     * Pas bloquant tant que tu testes uniquement avec curl/Postman (le CORS n'est
-     * appliqué que par les navigateurs), mais ça le devient dès que le frontend appelle
-     * l'API depuis une page ouverte dans un navigateur. Détails : docs/auth.md, §6.
-     */
-    @Bean
-    CorsConfigurationSource corsConfigurationSource() {
-
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("*"));
-        configuration.setAllowedMethods(Arrays.asList("*"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-
-        return source;
-    }
-
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http) {
 
         http.csrf(AbstractHttpConfigurer::disable);
 
         http.sessionManagement(
-                config ->
-                        config.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
-
-        http.cors(Customizer.withDefaults());
+            config ->
+                config.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         // Returns a plain 401 instead of a login-page redirect when auth is required but
         // missing/invalid. Runs in the Spring Security filter chain, before
@@ -94,20 +65,20 @@ public class JwtWebSecurityConfig {
         // "no credentials at all" failure, where authException.getMessage() is null, hence
         // the generic fallback.
         http.exceptionHandling(exceptionHandling ->
-                exceptionHandling.authenticationEntryPoint(
-                        (request,
-                         response,
-                         authException) -> {
+            exceptionHandling.authenticationEntryPoint(
+                (request,
+                 response,
+                 authException) -> {
 
-                            String message = Objects.requireNonNullElse(
-                                    (String) request.getAttribute(JwtFilter.TOKEN_ERROR_ATTRIBUTE),
-                                    Objects.requireNonNullElse(
-                                            authException.getMessage(),
-                                            "Authentication is required to access this resource"));
+                    String message = Objects.requireNonNullElse(
+                        (String) request.getAttribute(JwtFilter.TOKEN_ERROR_ATTRIBUTE),
+                        Objects.requireNonNullElse(
+                            authException.getMessage(),
+                            "Authentication is required to access this resource"));
 
-                            errorResponseWriter.write(
-                                    response, HttpStatus.UNAUTHORIZED, message, request.getRequestURI());
-                        }));
+                    errorResponseWriter.write(
+                        response, HttpStatus.UNAUTHORIZED, message, request.getRequestURI());
+                }));
 
         http.authorizeHttpRequests(config -> {
 
@@ -119,23 +90,23 @@ public class JwtWebSecurityConfig {
             // qu'ils atteignent BasicErrorController, donc leur corps suit bien le contrat
             // ErrorResponseDto (voir Javadoc de GlobalExceptionHandler).
             config
-                    .dispatcherTypeMatchers(DispatcherType.FORWARD, DispatcherType.ERROR)
-                    .permitAll();
+                .dispatcherTypeMatchers(DispatcherType.FORWARD, DispatcherType.ERROR)
+                .permitAll();
 
             config
-                    .requestMatchers("/auth/login", "/auth/signup")
-                    .permitAll();
+                .requestMatchers("/auth/login", "/auth/signup")
+                .permitAll();
 
             // TODO: placeholder paths — update once the salon/treatment/availability
             // controllers exist, to match their actual browse/search routes.
             config
-                    .requestMatchers(HttpMethod.GET, "/salons/**", "/treatments/**",
-                            "/availabilities/**")
-                    .permitAll();
+                .requestMatchers(HttpMethod.GET, "/salons/**", "/treatments/**",
+                    "/availabilities/**")
+                .permitAll();
 
             config
-                    .anyRequest()
-                    .authenticated();
+                .anyRequest()
+                .authenticated();
         });
 
         JwtFilter customFilter = new JwtFilter(jwtProvider);
