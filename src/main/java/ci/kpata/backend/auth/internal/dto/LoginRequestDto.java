@@ -1,23 +1,28 @@
 package ci.kpata.backend.auth.internal.dto;
 
+import ci.kpata.backend.shared.validation.IvoryCoastPhone;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
 /**
  * What a client is allowed to send to log in. Deliberately has no
  * {@code roles} field: a caller cannot claim its own permissions, only
  * {@code AuthService} — from the authenticated result — decides them.
- *
- * TODO(auth): contrairement à {@link SignupRequestDto}, ce DTO n'a aucune contrainte
- * de validation ({@code @NotBlank}...). Résultat : un {@code phoneNumber} ou
- * {@code password} vide/absent passe le {@code @Valid} du controller sans broncher et va
- * jusqu'à {@code AuthenticationManager}, qui finit par rejeter la requête via
- * {@code InvalidCredentialsException} (donc pas de crash), mais avec un message générique
- * "Invalid credentials" au lieu d'un 400 explicite du style "phoneNumber requis". Ajoute
- * les mêmes annotations que {@link SignupRequestDto} ici, puis vérifie avec un test que
- * {@code @Valid} rejette bien un login avec un champ vide avant même d'atteindre le
- * service. Détails : docs/auth-frontend-readiness.md, section 4.
+ * <p>
+ * Carries the same {@code @NotBlank}/{@code @Size}/{@link IvoryCoastPhone} constraints as
+ * {@link SignupRequestDto}: without them, an empty {@code phoneNumber} or {@code password}
+ * would still pass {@code @Valid} and reach {@code AuthenticationManager}, which rejects it
+ * anyway via {@code InvalidCredentialsException} — but with a generic "Invalid credentials"
+ * message instead of a precise 400 like "phoneNumber must not be blank".
  */
 public record LoginRequestDto(
 
+        @NotBlank
+        @IvoryCoastPhone
         String phoneNumber,
+
+        @NotBlank
+        @Size(min = 8, max = 100 )
         String password
 ) {
 }
