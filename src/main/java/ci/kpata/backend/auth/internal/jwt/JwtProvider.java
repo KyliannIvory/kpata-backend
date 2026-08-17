@@ -43,6 +43,18 @@ import org.slf4j.LoggerFactory;
  * across instances. Once the app is scaled horizontally, replace {@code revokedTokens}
  * with a shared store that has native TTL support (e.g. Redis: {@code SET token EX
  * secondsUntilExpiry}), which removes the need for {@link #purgeExpiredRevokedTokens()} too.
+ * <p>
+ * TODO(sonar): {@code java.util.Date} is used throughout this class (field {@code
+ * revokedTokens}, {@link #createToken}, {@link #revokeToken}, {@link
+ * #purgeExpiredRevokedTokens}) — Sonar flags it in favor of {@code java.time}. Replace it
+ * with {@link java.time.Instant}, not {@link java.time.LocalDateTime}: an expiration is an
+ * absolute point in time to compare against "now", exactly what {@code Date} already was —
+ * {@code LocalDateTime} has no timezone/offset and would force an arbitrary zone choice at
+ * the {@code Date} boundary. That boundary can't disappear: JJWT 0.13.0's {@code
+ * JwtBuilder.expiration(Date)}/{@code issuedAt(Date)} and {@code Claims.getExpiration()}
+ * only accept/return {@code Date} — convert with {@code Date.from(instant)} and {@code
+ * date.toInstant()} right at those call sites, keep {@code Instant} everywhere else
+ * internally ({@code revokedTokens} value type included).
  */
 @Component
 public class JwtProvider {

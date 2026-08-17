@@ -95,6 +95,28 @@ public class AuthService {
         return new AuthResponseDto(token);
     }
 
+    // TODO(auth): email optionnel (pas de @NotBlank, choix assumé) mais UNIQUE en base
+    // (db/migration, contrainte uq_users_email) — contrairement au téléphone juste en
+    // dessous, rien ne vérifie ici qu'un email non vide n'est pas déjà pris (deux emails
+    // "" collisionnent aussi ; seul NULL échappe à la contrainte UNIQUE). Résultat :
+    // repo.save(...) lève une DataIntegrityViolationException que GlobalExceptionHandler
+    // ne traite pas spécifiquement -> 500 générique au lieu d'un 409 propre. Reproduit en
+    // réel le 2026-08-17 (deux signups, même email, téléphones différents -> 500). Corriger
+    // en ajoutant repo.existsByEmail(...) ici (en ignorant les emails null/vides), sur le
+    // modèle de la vérification téléphone ci-dessous — ajouter la méthode correspondante à
+    // UserRepository. Détails : docs/auth.md, §6.
+    // TODO(auth): phoneNumber n'est jamais normalisé avant stockage/comparaison.
+    // @IvoryCoastPhone (voir IvoryCoastPhoneValidator) accepte aussi bien le format local
+    // (0788112233) que E.164 (+2250788112233) — les deux passent la validation — mais
+    // existsByPhoneNumber/findByPhoneNumber comparent la chaîne brute telle quelle. Un même
+    // numéro réel envoyé sous deux formats différents entre le signup et le login est donc
+    // traité comme deux utilisateurs différents (login échoue avec "Invalid credentials").
+    // Reproduit en réel le 2026-08-17 : signup avec "0788112233" -> login avec
+    // "+2250788112233" -> 401. Corriger soit ici en normalisant vers E.164 avant
+    // repo.existsByPhoneNumber/repo.save (PhoneNumberUtil.format(..., E164), déjà une
+    // dépendance du projet via IvoryCoastPhoneValidator), soit en imposant un seul format au
+    // frontend si la normalisation reste hors scope du backend pour l'instant. Détails :
+    // docs/auth.md, §6.
     public AuthResponseDto signup(SignupRequestDto dto) {
 
         log.info("Signup attempt for phoneNumber={}", dto.phoneNumber());
