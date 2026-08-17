@@ -35,7 +35,7 @@ token ou route non trouvée → déjà tranchée avant `DispatcherServlet` ou vi
 | `UserMapper` | MapStruct, `User` → `UserDto` uniquement (pas de sens inverse, voir §4) |
 | `JwtProvider` | Émet/valide/révoque les JWT ; blacklist en mémoire (TODO Redis si scaling) |
 | `JwtFilter` | Lit le token par requête ; un token invalide est ignoré, pas rejeté (voir §3) |
-| `JwtWebSecurityConfig` | Routes publiques/protégées, CORS, dispatch `ERROR` autorisé |
+| `JwtWebSecurityConfig` | Routes publiques/protégées, dispatch `ERROR` autorisé (pas de CORS, voir §6) |
 | `ApplicationException` / `GlobalExceptionHandler` | Contrat d'erreur unique, voir §4 |
 
 ## 3. Comportement face à un token JWT
@@ -75,20 +75,62 @@ après `DispatcherServlet`) : Javadoc de `GlobalExceptionHandler` et `ErrorRespo
 - [x] Valider `LoginRequestDto` (`@NotBlank` sur `phoneNumber`/`password`, comme `SignupRequestDto`)
 - [x] Tests `AuthController` + config de sécurité (`AuthControllerTest`, `@WebMvcTest` + vrai `JwtWebSecurityConfig`)
 
-## 6. À trancher consciemment plus tard (pas bloquant)
+## 6. Décisions et TODO ouverts
+
+### 6.1 Par où commencer (prêt, pas bloqué par autre chose)
+
+Dans l'ordre suggéré — les deux premiers sont indépendants entre eux, fais celui que tu veux
+en premier ; le reste peut attendre.
+
+1. **Email dupliqué au signup → 500 au lieu d'un 409 propre** : l'email est optionnel (choix
+   assumé, seul le téléphone est obligatoire) mais `UNIQUE` en base (`uq_users_email`).
+   `AuthService.signup` ne vérifie que le téléphone (`existsByPhoneNumber`), jamais l'email —
+   `repo.save(...)` lève alors une `DataIntegrityViolationException` non gérée par
+   `GlobalExceptionHandler`, qui répond 500. Reproduit en réel le 2026-08-17 (deux signups,
+   même email, téléphones différents). TODO posé dans `AuthService.signup` : ajouter
+   `repo.existsByEmail(...)` (en ignorant null/vide), sur le modèle de la vérification
+   téléphone.
+2. **`phoneNumber` jamais normalisé** : `@IvoryCoastPhone` accepte format local
+   (`0788112233`) et E.164 (`+2250788112233`), mais `existsByPhoneNumber`/`findByPhoneNumber`
+   comparent la chaîne brute. Un même numéro envoyé sous deux formats différents entre signup
+   et login est traité comme deux comptes distincts (login échoue). Reproduit en réel le
+   2026-08-17. TODO posé dans `AuthService.signup` : normaliser vers E.164 avant
+   stockage/comparaison, ou à défaut imposer un format unique côté frontend en attendant (déjà
+   communiqué : voir `docs/frontend-auth-answers.md`).
+3. **`java.util.Date` → `java.time.Instant` dans `JwtProvider`** (exigence Sonar) : TODO posé
+   dans la Javadoc de la classe, avec le détail (utiliser `Instant`, pas `LocalDateTime` —
+   raison expliquée sur place — et convertir aux frontières puisque JJWT 0.13.0 impose encore
+   `Date` sur `expiration()`/`issuedAt()`/`getExpiration()`).
+
+### 6.2 Bloqué par autre chose (rien à faire avant que le déclencheur arrive)
+
+- **Routes placeholder `/salons/**`, `/treatments/**`, `/availabilities/**`**
+  (`JwtWebSecurityConfig`) : à ajuster seulement quand les controllers salon/treatment/
+  availability existeront, pour matcher leurs vraies routes de browse/recherche.
+- **Blacklist de tokens révoqués en mémoire** — perdue au redémarrage, non partagée entre
+  instances. Non pertinent tant que l'app tourne en une seule instance ; à revoir si scaling
+  horizontal (TODO Redis posé dans `JwtProvider`).
+
+### 6.3 Décidé (pour référence, rien à faire)
 
 - **Principal `Authentication` incohérent** : `AuthService.login` porte un `UserDetails`,
-  `JwtProvider#getAuthentication` (donc toute route protégée) porte un `String`. Ne pas
-  caster en `UserDetails` ailleurs que dans `login`. Détail : Javadoc de `JwtProvider#getAuthentication`.
-- **CORS grand ouvert** (`*`) — TODO posé dans `JwtWebSecurityConfig#corsConfigurationSource`, à
-  restreindre avant un vrai frontend. Décision du 2026-08-17 : laissé tel quel pour démarrer le
-  frontend, à resserrer une fois l'origine réelle connue (ex. `http://localhost:5173` en dev).
-  Redevient pertinent dès que le frontend appelle l'API depuis un navigateur (curl/Postman ignorent CORS).
+  `JwtProvider#getAuthentication` (donc toute route protégée) porte un `String`. Décision
+  du 2026-08-17 : laissé tel quel. Ne pas caster en `UserDetails` ailleurs que dans `login`.
+  Détail : Javadoc de `JwtProvider#getAuthentication`.
+- ~~CORS~~ — décidé et appliqué le 2026-08-17 : le frontend (Next.js App Router) proxifie
+  systématiquement toutes les requêtes vers l'API via son serveur (Server Actions/Server
+  Components), jamais depuis du JS exécuté dans le navigateur — CORS n'est appliqué que par
+  les navigateurs, donc jamais exercé ici. Entièrement supprimé (pas juste restreint) : bean
+  `corsConfigurationSource`, `http.cors(...)`, champ `allowedOrigins`, propriété
+  `app.cors.allowed-origins`. Le supprimer plutôt que le garder restreint sert de garde-fou :
+  si du code frontend appelle l'API en direct depuis le navigateur par erreur, l'absence de
+  config CORS fait échouer la requête au lieu de la laisser passer. Pour la même raison, CSRF
+  reste désactivé (`http.csrf(...disable)`) — l'API n'authentifie jamais via cookie posé par
+  Spring Boot, seulement via header `Authorization` construit par du code serveur de confiance,
+  donc rien que CSRF protégerait.
 - ~~Token 5 min, pas de refresh~~ — décidé le 2026-08-17 : expiration augmentée pragmatiquement à
   1h (`application.yaml`, `jwt.expiration`). Pas de refresh token pour l'instant ; à revisiter si
   1h s'avère trop court à l'usage.
-- **Blacklist de tokens révoqués en mémoire** — perdue au redémarrage, non partagée entre
-  instances. Non pertinent tant que l'app tourne en une seule instance.
 
 ## 7. Vérification rapide (`curl`)
 
