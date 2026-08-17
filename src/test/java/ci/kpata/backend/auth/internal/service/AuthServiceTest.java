@@ -19,6 +19,7 @@ import ci.kpata.backend.auth.internal.exception.UserAlreadyExistsException;
 import ci.kpata.backend.auth.internal.jwt.JwtProvider;
 import ci.kpata.backend.auth.internal.mapper.UserMapper;
 import ci.kpata.backend.auth.internal.repository.UserRepository;
+
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -65,13 +66,13 @@ class AuthServiceTest {
         // which returns an Authentication whose principal is the UserDetails loaded by
         // UserDetailsServiceImpl (see AuthService#login) — not the raw phone number.
         UserDetails userDetails = org.springframework.security.core.userdetails.User
-                .withUsername(PHONE_NUMBER)
-                .password(PASSWORD)
-                .authorities(List.of(new SimpleGrantedAuthority("CUSTOMER")))
-                .build();
+            .withUsername(PHONE_NUMBER)
+            .password(PASSWORD)
+            .authorities(List.of(new SimpleGrantedAuthority("CUSTOMER")))
+            .build();
 
         var authenticated = new UsernamePasswordAuthenticationToken(
-                userDetails, PASSWORD, List.of(new SimpleGrantedAuthority("CUSTOMER")));
+            userDetails, PASSWORD, List.of(new SimpleGrantedAuthority("CUSTOMER")));
 
         when(authenticationManager.authenticate(any())).thenReturn(authenticated);
         when(provider.createToken(any())).thenReturn("signed-token");
@@ -92,10 +93,12 @@ class AuthServiceTest {
         var cause = new BadCredentialsException("Bad credentials");
         when(authenticationManager.authenticate(any())).thenThrow(cause);
 
+        LoginRequestDto loginRequestDto = new LoginRequestDto(PHONE_NUMBER, "wrong-password");
+
         assertThatThrownBy(() ->
-                authService.login(new LoginRequestDto(PHONE_NUMBER, "wrong-password")))
-                .isInstanceOf(InvalidCredentialsException.class)
-                .hasCause(cause);
+            authService.login(loginRequestDto))
+            .isInstanceOf(InvalidCredentialsException.class)
+            .hasCause(cause);
     }
 
     @Test
@@ -130,7 +133,7 @@ class AuthServiceTest {
         when(repo.existsByPhoneNumber(PHONE_NUMBER)).thenReturn(true);
 
         assertThatThrownBy(() -> authService.signup(dto))
-                .isInstanceOf(UserAlreadyExistsException.class);
+            .isInstanceOf(UserAlreadyExistsException.class);
 
         verify(repo, never()).save(any());
     }
