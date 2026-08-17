@@ -21,10 +21,10 @@ import ci.kpata.backend.auth.internal.mapper.UserMapper;
 import ci.kpata.backend.auth.internal.repository.UserRepository;
 import java.util.List;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -52,15 +52,11 @@ class AuthServiceTest {
     @Mock
     private AuthenticationManager authenticationManager;
 
-    private AuthService authService;
-
     @Mock
     private UserMapper mapper;
 
-    @BeforeEach
-    void setUp() {
-        authService = new AuthService(repo, provider, encoder, authenticationManager, mapper);
-    }
+    @InjectMocks
+    private AuthService authService;
 
     @Test
     void login_withValidCredentials_returnsTokenBuiltFromAuthenticatedRoles() {
