@@ -29,8 +29,8 @@ class UserDetailsServiceImplTest {
     void loadUserByUsername_withKnownPhoneNumber_mapsPasswordAndRolesToAuthorities() {
 
         User user = User.builder()
-                .firstname("Kyliann")
-                .lastname("Kouame")
+                .firstname("Jane")
+                .lastname("Doe")
                 .phoneNumber(PHONE_NUMBER)
                 .password("hashed-password")
                 .roles(Set.of(Role.CUSTOMER, Role.PRO))
