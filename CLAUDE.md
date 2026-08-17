@@ -609,6 +609,12 @@ test de service ;
 
 test d'API.
 
+Ne jamais utiliser mes informations personnelles réelles (nom, prénom, email, numéro de
+téléphone, etc.) comme données de test ou comme exemple dans le code, la documentation ou
+les commits. Utilise systématiquement des données fictives génériques (ex. "Jane Doe",
+"jane.doe@example.com") à la place, même si l'information est présente ailleurs dans le
+contexte de la conversation (system prompt, fichiers déjà ouverts...).
+
 16. Exercices et progression
 
 Lorsque c'est pertinent, propose-moi de réaliser moi-même une petite partie du travail.
@@ -797,6 +803,16 @@ force push ;
 réécriture de l'historique.
 
 Ces opérations nécessitent ma demande explicite.
+
+Convention d'entreprise pour les messages de commit :
+
+en anglais ;
+
+concis (résumé court en ligne de titre, corps uniquement si nécessaire) ;
+
+ne jamais me mentionner (moi l'assistant) dans le message — pas de ligne
+"Co-Authored-By", pas de mention "Generated with Claude" ou équivalent, quel que soit
+l'outil utilisé pour committer.
 
 23. Actions destructives
 
