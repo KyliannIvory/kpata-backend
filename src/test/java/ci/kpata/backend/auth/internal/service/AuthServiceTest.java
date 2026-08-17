@@ -14,10 +14,13 @@ import ci.kpata.backend.auth.internal.dto.AuthResponseDto;
 import ci.kpata.backend.auth.internal.dto.LoginRequestDto;
 import ci.kpata.backend.auth.internal.dto.SignupRequestDto;
 import ci.kpata.backend.auth.internal.dto.UserClaimsDto;
+import ci.kpata.backend.auth.internal.exception.InvalidCredentialsException;
+import ci.kpata.backend.auth.internal.exception.UserAlreadyExistsException;
 import ci.kpata.backend.auth.internal.jwt.JwtProvider;
+import ci.kpata.backend.auth.internal.mapper.UserMapper;
 import ci.kpata.backend.auth.internal.repository.UserRepository;
 import java.util.List;
-import java.util.Set;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,9 +54,12 @@ class AuthServiceTest {
 
     private AuthService authService;
 
+    @Mock
+    private UserMapper mapper;
+
     @BeforeEach
     void setUp() {
-        authService = new AuthService(repo, provider, encoder, authenticationManager);
+        authService = new AuthService(repo, provider, encoder, authenticationManager, mapper);
     }
 
     @Test
@@ -99,7 +105,7 @@ class AuthServiceTest {
     @Test
     void signup_withNewPhoneNumber_savesEncodedPasswordAndReturnsToken() {
 
-        var dto = new SignupRequestDto("Kyliann", "Kouame", PHONE_NUMBER, PASSWORD, "k@x.com");
+        var dto = new SignupRequestDto("Jane", "Doe", PHONE_NUMBER, PASSWORD, "jane.doe@example.com");
 
         when(repo.existsByPhoneNumber(PHONE_NUMBER)).thenReturn(false);
         when(encoder.encode(PASSWORD)).thenReturn("hashed-password");
@@ -113,8 +119,8 @@ class AuthServiceTest {
         verify(repo).save(userCaptor.capture());
 
         User saved = userCaptor.getValue();
-        assertThat(saved.getFirstname()).isEqualTo("Kyliann");
-        assertThat(saved.getLastname()).isEqualTo("Kouame");
+        assertThat(saved.getFirstname()).isEqualTo("Jane");
+        assertThat(saved.getLastname()).isEqualTo("Doe");
         assertThat(saved.getPhoneNumber()).isEqualTo(PHONE_NUMBER);
         assertThat(saved.getPassword()).isEqualTo("hashed-password");
         assertThat(saved.getRoles()).containsExactly(Role.CUSTOMER);
@@ -123,7 +129,7 @@ class AuthServiceTest {
     @Test
     void signup_withExistingPhoneNumber_throwsAndNeverSaves() {
 
-        var dto = new SignupRequestDto("Kyliann", "Kouame", PHONE_NUMBER, PASSWORD, "k@x.com");
+        var dto = new SignupRequestDto("Jane", "Doe", PHONE_NUMBER, PASSWORD, "jane.doe@example.com");
 
         when(repo.existsByPhoneNumber(PHONE_NUMBER)).thenReturn(true);
 

@@ -3,11 +3,14 @@ package ci.kpata.backend.auth;
 import ci.kpata.backend.auth.internal.dto.AuthResponseDto;
 import ci.kpata.backend.auth.internal.dto.LoginRequestDto;
 import ci.kpata.backend.auth.internal.dto.SignupRequestDto;
+import ci.kpata.backend.auth.internal.dto.UserDto;
 import ci.kpata.backend.auth.internal.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.security.Principal;
 
 @RestController
 @RequestMapping("/auth")
@@ -49,10 +52,18 @@ public class AuthController {
             .build();
     }
 
-    // TODO(auth): exposer GET /auth/me.
-    // Doit retourner les infos de l'utilisateur courant (jamais le password !), à partir
-    // du token présent sur la requête. Nécessaire pour que le frontend sache "qui est
-    // connecté" après un refresh de page sans avoir à décoder le JWT côté client.
-    // Concepts, options de conception et critères d'acceptation détaillés :
-    // docs/auth-frontend-readiness.md, section 2.
+    /**
+     * {@code principal.getName()} is the JWT subject (phone number) regardless of whether
+     * the underlying {@code Authentication}'s principal is a {@code String} or a {@code
+     * UserDetails} — see {@code JwtProvider#getAuthentication}'s Javadoc for why that
+     * distinction matters and why casting the principal here would be a mistake.
+     */
+    @GetMapping("/me")
+    public ResponseEntity<UserDto> whoAmI(Principal principal) {
+
+        String phoneNumber = principal.getName();
+        UserDto userDto = service.findUserByPhoneNumber(phoneNumber);
+
+        return ResponseEntity.ok(userDto);
+    }
 }

@@ -2,11 +2,12 @@ package ci.kpata.backend.auth.internal.service;
 
 import ci.kpata.backend.auth.internal.domain.Role;
 import ci.kpata.backend.auth.internal.domain.User;
-import ci.kpata.backend.auth.internal.dto.LoginRequestDto;
-import ci.kpata.backend.auth.internal.dto.AuthResponseDto;
-import ci.kpata.backend.auth.internal.dto.SignupRequestDto;
-import ci.kpata.backend.auth.internal.dto.UserClaimsDto;
+import ci.kpata.backend.auth.internal.dto.*;
+import ci.kpata.backend.auth.internal.exception.InvalidCredentialsException;
+import ci.kpata.backend.auth.internal.exception.UserAlreadyExistsException;
+import ci.kpata.backend.auth.internal.exception.UserNotFoundException;
 import ci.kpata.backend.auth.internal.jwt.JwtProvider;
+import ci.kpata.backend.auth.internal.mapper.UserMapper;
 import ci.kpata.backend.auth.internal.repository.UserRepository;
 import java.util.Objects;
 import java.util.Set;
@@ -38,12 +39,15 @@ public class AuthService {
 
     private final AuthenticationManager authenticationManager;
 
+    private final UserMapper mapper;
+
     public AuthService(UserRepository repo, JwtProvider provider, PasswordEncoder encoder,
-                       AuthenticationManager authenticationManager) {
+                       AuthenticationManager authenticationManager, UserMapper mapper) {
         this.repo = repo;
         this.provider = provider;
         this.encoder = encoder;
         this.authenticationManager = authenticationManager;
+        this.mapper = mapper;
     }
 
     /**
@@ -137,5 +141,20 @@ public class AuthService {
         } else {
             log.debug("Logout called without a bearer token, nothing to revoke");
         }
+    }
+
+    /**
+     * Looks up the full {@code User} behind a token's subject and maps it to the DTO
+     * {@code GET /auth/me} returns — never the entity itself, which carries the password.
+     *
+     * @throws UserNotFoundException if the token is valid but the account it names no
+     *                                longer exists (e.g. deleted after the token was issued)
+     */
+    public UserDto findUserByPhoneNumber(String phoneNumber) {
+
+        User user = repo.findByPhoneNumber(phoneNumber).orElseThrow(() ->
+            new UserNotFoundException("user not found")
+        );
+        return mapper.toDto(user);
     }
 }
