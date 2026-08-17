@@ -1,4 +1,4 @@
-package ci.kpata.backend.auth.internal.jwt;
+package ci.kpata.backend.auth.internal.exception;
 
 /**
  * Thrown when a JWT is expired, malformed, has an invalid signature, or has

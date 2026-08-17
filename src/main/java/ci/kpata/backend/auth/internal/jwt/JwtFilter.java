@@ -1,5 +1,6 @@
 package ci.kpata.backend.auth.internal.jwt;
 
+import ci.kpata.backend.auth.internal.exception.InvalidTokenException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

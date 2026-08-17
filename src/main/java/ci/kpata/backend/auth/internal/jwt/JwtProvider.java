@@ -2,6 +2,7 @@ package ci.kpata.backend.auth.internal.jwt;
 
 import ci.kpata.backend.auth.internal.domain.Role;
 import ci.kpata.backend.auth.internal.dto.UserClaimsDto;
+import ci.kpata.backend.auth.internal.exception.InvalidTokenException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;

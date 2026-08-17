@@ -6,6 +6,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ci.kpata.backend.auth.internal.domain.Role;
 import ci.kpata.backend.auth.internal.dto.UserClaimsDto;
 import java.util.Set;
+
+import ci.kpata.backend.auth.internal.exception.InvalidTokenException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.core.GrantedAuthority;
