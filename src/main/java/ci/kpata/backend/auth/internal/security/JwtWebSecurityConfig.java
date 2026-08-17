@@ -58,8 +58,7 @@ public class JwtWebSecurityConfig {
      * valeur par défaut), pour ne pas recompiler à chaque changement d'environnement.
      * Pas bloquant tant que tu testes uniquement avec curl/Postman (le CORS n'est
      * appliqué que par les navigateurs), mais ça le devient dès que le frontend appelle
-     * l'API depuis une page ouverte dans un navigateur. Détails :
-     * docs/auth-frontend-readiness.md, section 5.
+     * l'API depuis une page ouverte dans un navigateur. Détails : docs/auth.md, §6.
      */
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
@@ -115,11 +114,10 @@ public class JwtWebSecurityConfig {
             // Autorise le forward ET le dispatch ERROR internes de Spring Boot (vers /error)
             // sans authentification : sinon anyRequest().authenticated() plus bas les
             // rejette avec un 401 vide, écrasant le vrai statut (404, 405, 500...) d'une
-            // exception non interceptée par GlobalExceptionHandler. Vérifié par curl le
-            // 2026-08-14 : route inexistante + token valide -> 404 (plus 401). Reste un
-            // TODO : BasicErrorController répond bien sur /error, mais avec son propre
-            // format JSON (pas ErrorResponseDto, pas de message/fieldErrors) — voir
-            // docs/auth-error-handling.md, TODO 4, pour le correctif restant.
+            // exception non interceptée par GlobalExceptionHandler. Le catch-all
+            // Exception.class de GlobalExceptionHandler traite ensuite ces cas avant même
+            // qu'ils atteignent BasicErrorController, donc leur corps suit bien le contrat
+            // ErrorResponseDto (voir Javadoc de GlobalExceptionHandler).
             config
                     .dispatcherTypeMatchers(DispatcherType.FORWARD, DispatcherType.ERROR)
                     .permitAll();

@@ -26,15 +26,15 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  * for exceptions raised <em>during {@code DispatcherServlet}'s handling of a controller
  * method</em> — an exception thrown earlier in the request, e.g. inside a {@code Filter}
  * such as {@code JwtFilter}, runs before {@code DispatcherServlet} even sees the request
- * and will never reach this class (see {@code docs/auth-error-handling.md}, TODO 2bis, for
- * how that case is handled instead).
+ * and will never reach this class — see {@link ErrorResponseWriter} for how that case is
+ * handled instead, and {@code docs/auth.md} §3 for the overall request flow.
  * <p>
  * Handlers below are matched from most to least specific: known business exceptions
  * ({@link ApplicationException}), known framework exceptions ({@code @Valid} failures,
  * malformed JSON), and finally {@link #handleUnexpectedException} as a last resort for
  * anything else — including bugs nobody anticipated. That last handler is what keeps
  * <em>every</em> error response, known or not, on the same {@link ErrorResponseDto}
- * contract (see {@code docs/auth-error-handling.md}, TODO 4).
+ * contract.
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -98,8 +98,7 @@ public class GlobalExceptionHandler {
      * Last-resort handler: catches anything not matched by a more specific handler above.
      * Without it, an unanticipated exception (e.g. a {@code NullPointerException}) would
      * propagate past this class and fall back to Spring Boot's default {@code /error}
-     * handling, whose JSON body doesn't follow the {@link ErrorResponseDto} contract (see
-     * {@code docs/auth-error-handling.md}, TODO 4).
+     * handling, whose JSON body doesn't follow the {@link ErrorResponseDto} contract.
      * <p>
      * Since Spring Framework 6, several framework-thrown exceptions that already carry
      * their own correct HTTP status — e.g. {@code HttpRequestMethodNotSupportedException}
