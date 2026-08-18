@@ -19,6 +19,7 @@ import ci.kpata.backend.auth.internal.exception.UserAlreadyExistsException;
 import ci.kpata.backend.auth.internal.jwt.JwtProvider;
 import ci.kpata.backend.auth.internal.mapper.UserMapper;
 import ci.kpata.backend.auth.internal.repository.UserRepository;
+import ci.kpata.backend.shared.validation.PhoneNumberNormalizer;
 
 import java.util.List;
 
@@ -39,6 +40,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 class AuthServiceTest {
 
     private static final String PHONE_NUMBER = "+2250700000000";
+    private static final String RAW_PHONE_NUMBER = "0700000000";
     private static final String PASSWORD = "s3cret-password";
 
     @Mock
@@ -55,6 +57,9 @@ class AuthServiceTest {
 
     @Mock
     private UserMapper mapper;
+
+    @Mock
+    private PhoneNumberNormalizer normalizer;
 
     @InjectMocks
     private AuthService authService;
@@ -74,6 +79,7 @@ class AuthServiceTest {
         var authenticated = new UsernamePasswordAuthenticationToken(
             userDetails, PASSWORD, List.of(new SimpleGrantedAuthority("CUSTOMER")));
 
+        when(normalizer.normalize(PHONE_NUMBER)).thenReturn(PHONE_NUMBER);
         when(authenticationManager.authenticate(any())).thenReturn(authenticated);
         when(provider.createToken(any())).thenReturn("signed-token");
 
@@ -91,6 +97,7 @@ class AuthServiceTest {
     void login_withWrongCredentials_throwsInvalidCredentialsAndPreservesCause() {
 
         var cause = new BadCredentialsException("Bad credentials");
+        when(normalizer.normalize(PHONE_NUMBER)).thenReturn(PHONE_NUMBER);
         when(authenticationManager.authenticate(any())).thenThrow(cause);
 
         LoginRequestDto loginRequestDto = new LoginRequestDto(PHONE_NUMBER, "wrong-password");
@@ -102,10 +109,15 @@ class AuthServiceTest {
     }
 
     @Test
-    void signup_withNewPhoneNumber_savesEncodedPasswordAndReturnsToken() {
+    void signup_withNewPhoneNumber_savesEncodedPasswordAndReturnsTokenUsingNormalizedPhoneNumber() {
 
-        var dto = new SignupRequestDto("Jane", "Doe", PHONE_NUMBER, PASSWORD, "jane.doe@example.com");
+        // RAW_PHONE_NUMBER (local format) vs PHONE_NUMBER (E.164, what normalizer.normalize
+        // returns) are deliberately different here: this test only passes if every place that
+        // touches the phone number after signup — uniqueness check, saved entity, JWT claims —
+        // uses the normalized form, not the raw one the client sent.
+        var dto = new SignupRequestDto("Jane", "Doe", RAW_PHONE_NUMBER, PASSWORD, "jane.doe@example.com");
 
+        when(normalizer.normalize(RAW_PHONE_NUMBER)).thenReturn(PHONE_NUMBER);
         when(repo.existsByPhoneNumber(PHONE_NUMBER)).thenReturn(false);
         when(encoder.encode(PASSWORD)).thenReturn("hashed-password");
         when(provider.createToken(any())).thenReturn("signed-token");
@@ -123,13 +135,18 @@ class AuthServiceTest {
         assertThat(saved.getPhoneNumber()).isEqualTo(PHONE_NUMBER);
         assertThat(saved.getPassword()).isEqualTo("hashed-password");
         assertThat(saved.getRoles()).containsExactly(Role.CUSTOMER);
+
+        ArgumentCaptor<UserClaimsDto> claimsCaptor = ArgumentCaptor.forClass(UserClaimsDto.class);
+        verify(provider).createToken(claimsCaptor.capture());
+        assertThat(claimsCaptor.getValue().phoneNumber()).isEqualTo(PHONE_NUMBER);
     }
 
     @Test
     void signup_withExistingPhoneNumber_throwsAndNeverSaves() {
 
-        var dto = new SignupRequestDto("Jane", "Doe", PHONE_NUMBER, PASSWORD, "jane.doe@example.com");
+        var dto = new SignupRequestDto("Jane", "Doe", RAW_PHONE_NUMBER, PASSWORD, "jane.doe@example.com");
 
+        when(normalizer.normalize(RAW_PHONE_NUMBER)).thenReturn(PHONE_NUMBER);
         when(repo.existsByPhoneNumber(PHONE_NUMBER)).thenReturn(true);
 
         assertThatThrownBy(() -> authService.signup(dto))

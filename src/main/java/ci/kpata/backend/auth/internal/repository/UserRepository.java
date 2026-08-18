@@ -24,4 +24,12 @@ public interface UserRepository extends JpaRepository<User, UUID> {
      * Check if a user exists in the database based on their phone number.
      */
     boolean existsByPhoneNumber(String phoneNumber);
+
+    /**
+     * Checks whether an email is already taken. Case-insensitive: two addresses that only
+     * differ by case (e.g. {@code Jane@x.com} vs {@code jane@x.com}) are the same mailbox for
+     * virtually every provider, so they must collide here too, or the {@code uq_users_email}
+     * constraint could be bypassed at signup while still rejecting the "same" address later.
+     */
+    boolean existsByEmailIgnoreCase(String email);
 }

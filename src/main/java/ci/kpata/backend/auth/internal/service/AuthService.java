@@ -9,9 +9,14 @@ import ci.kpata.backend.auth.internal.exception.UserNotFoundException;
 import ci.kpata.backend.auth.internal.jwt.JwtProvider;
 import ci.kpata.backend.auth.internal.mapper.UserMapper;
 import ci.kpata.backend.auth.internal.repository.UserRepository;
+
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import ci.kpata.backend.shared.validation.PhoneNumberNormalizer;
+import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -27,6 +32,7 @@ import org.slf4j.LoggerFactory;
  * Orchestrates login and signup: delegates credential checks and token issuing.
  */
 @Service
+@RequiredArgsConstructor
 public class AuthService {
 
     private static final Logger log = LoggerFactory.getLogger(AuthService.class);
@@ -41,14 +47,7 @@ public class AuthService {
 
     private final UserMapper mapper;
 
-    public AuthService(UserRepository repo, JwtProvider provider, PasswordEncoder encoder,
-                       AuthenticationManager authenticationManager, UserMapper mapper) {
-        this.repo = repo;
-        this.provider = provider;
-        this.encoder = encoder;
-        this.authenticationManager = authenticationManager;
-        this.mapper = mapper;
-    }
+    private final PhoneNumberNormalizer normalizer;
 
     /**
      * Verifies the phone number/password pair, then issues an access token carrying
@@ -58,7 +57,7 @@ public class AuthService {
      */
     public AuthResponseDto login(LoginRequestDto request) {
 
-        String phoneNumber = request.phoneNumber();
+        String phoneNumber = normalizer.normalize(request.phoneNumber());
         String password = request.password();
 
         log.info("Login attempt for phoneNumber={}", phoneNumber);
@@ -66,7 +65,7 @@ public class AuthService {
         Authentication result;
         try {
             result = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(phoneNumber, password));
+                new UsernamePasswordAuthenticationToken(phoneNumber, password));
         } catch (AuthenticationException e) {
             log.warn("Login failed for phoneNumber={}: {}", phoneNumber, e.getMessage());
             throw new InvalidCredentialsException("Invalid credentials", e);
@@ -80,12 +79,12 @@ public class AuthService {
         // Don't copy this cast onto SecurityContextHolder's current authentication elsewhere.
         UserDetails userDetails = (UserDetails) result.getPrincipal();
         Set<Role> roles = Objects
-                .requireNonNull(userDetails, "Authenticated principal must not be null")
-                .getAuthorities()
-                .stream()
-                .map(GrantedAuthority::getAuthority)
-                .map(Role::valueOf)
-                .collect(Collectors.toSet());
+            .requireNonNull(userDetails, "Authenticated principal must not be null")
+            .getAuthorities()
+            .stream()
+            .map(GrantedAuthority::getAuthority)
+            .map(Role::valueOf)
+            .collect(Collectors.toSet());
 
         UserClaimsDto claims = new UserClaimsDto(phoneNumber, roles);
         String token = provider.createToken(claims);
@@ -95,55 +94,49 @@ public class AuthService {
         return new AuthResponseDto(token);
     }
 
-    // TODO(auth): email optionnel (pas de @NotBlank, choix assumé) mais UNIQUE en base
-    // (db/migration, contrainte uq_users_email) — contrairement au téléphone juste en
-    // dessous, rien ne vérifie ici qu'un email non vide n'est pas déjà pris (deux emails
-    // "" collisionnent aussi ; seul NULL échappe à la contrainte UNIQUE). Résultat :
-    // repo.save(...) lève une DataIntegrityViolationException que GlobalExceptionHandler
-    // ne traite pas spécifiquement -> 500 générique au lieu d'un 409 propre. Reproduit en
-    // réel le 2026-08-17 (deux signups, même email, téléphones différents -> 500). Corriger
-    // en ajoutant repo.existsByEmail(...) ici (en ignorant les emails null/vides), sur le
-    // modèle de la vérification téléphone ci-dessous — ajouter la méthode correspondante à
-    // UserRepository. Détails : docs/auth.md, §6.
-    // TODO(auth): phoneNumber n'est jamais normalisé avant stockage/comparaison.
-    // @IvoryCoastPhone (voir IvoryCoastPhoneValidator) accepte aussi bien le format local
-    // (0788112233) que E.164 (+2250788112233) — les deux passent la validation — mais
-    // existsByPhoneNumber/findByPhoneNumber comparent la chaîne brute telle quelle. Un même
-    // numéro réel envoyé sous deux formats différents entre le signup et le login est donc
-    // traité comme deux utilisateurs différents (login échoue avec "Invalid credentials").
-    // Reproduit en réel le 2026-08-17 : signup avec "0788112233" -> login avec
-    // "+2250788112233" -> 401. Corriger soit ici en normalisant vers E.164 avant
-    // repo.existsByPhoneNumber/repo.save (PhoneNumberUtil.format(..., E164), déjà une
-    // dépendance du projet via IvoryCoastPhoneValidator), soit en imposant un seul format au
-    // frontend si la normalisation reste hors scope du backend pour l'instant. Détails :
-    // docs/auth.md, §6.
+    /**
+     * Normalizes the phone number once ({@code phone}) and reuses that same value for the
+     * uniqueness check, the persisted entity and the JWT claims. Comparing or storing a mix
+     * of the raw {@code dto.phoneNumber()} and the normalized form let the same real number
+     * silently resolve to two different accounts (fixed 2026-08-18, see docs/auth.md §6.3).
+     */
     public AuthResponseDto signup(SignupRequestDto dto) {
 
         log.info("Signup attempt for phoneNumber={}", dto.phoneNumber());
 
-        if (repo.existsByPhoneNumber(dto.phoneNumber())) {
-            log.warn("Signup rejected, phoneNumber={} already registered", dto.phoneNumber());
-            throw new UserAlreadyExistsException(
-                    "An account with this phone number already exists");
+        String email = dto.email();
+        String phone = normalizer.normalize(dto.phoneNumber());
+
+        validateSignup(phone, email);
+
+        if (email != null && email.isBlank()) {
+            email = null;
         }
 
         Set<Role> roles = Set.of(Role.CUSTOMER);
 
-        repo.save(User
-                .builder()
-                .firstname(dto.firstname())
-                .lastname(dto.lastname())
-                .phoneNumber(dto.phoneNumber())
-                .email(dto.email())
-                .roles(roles)
-                .password(encoder.encode(dto.password()))
-                .build());
+        User user = User.builder()
+            .firstname(dto.firstname())
+            .lastname(dto.lastname())
+            .phoneNumber(phone)
+            .email(email)
+            .roles(roles)
+            .password(encoder.encode(dto.password()))
+            .build();
 
-        UserClaimsDto claims = new UserClaimsDto(dto.phoneNumber(), roles);
+        try {
+            repo.save(user);
+        } catch (DataIntegrityViolationException e) {
+            log.warn("Signup race condition detected for phoneNumber={}: {}", phone, e.getMessage());
+            throw new UserAlreadyExistsException(
+                "An account with this phone number or email already exists");
+        }
+
+        UserClaimsDto claims = new UserClaimsDto(phone, roles);
 
         String token = provider.createToken(claims);
 
-        log.info("User registered: phoneNumber={}, roles={}", dto.phoneNumber(), roles);
+        log.info("User registered: phoneNumber={}, roles={}", phone, roles);
 
         return new AuthResponseDto(token);
     }
@@ -170,7 +163,7 @@ public class AuthService {
      * {@code GET /auth/me} returns — never the entity itself, which carries the password.
      *
      * @throws UserNotFoundException if the token is valid but the account it names no
-     *                                longer exists (e.g. deleted after the token was issued)
+     *                               longer exists (e.g. deleted after the token was issued)
      */
     public UserDto findUserByPhoneNumber(String phoneNumber) {
 
@@ -178,5 +171,22 @@ public class AuthService {
             new UserNotFoundException("user not found")
         );
         return mapper.toDto(user);
+    }
+
+    private void validateSignup(String phone, String email) {
+
+        if (repo.existsByPhoneNumber(phone)) {
+            log.warn("Signup rejected, phoneNumber={} already registered", phone);
+            throw new UserAlreadyExistsException(
+                "An account with this phone number already exists");
+        }
+
+        if (email != null
+            && !email.isBlank()
+            && repo.existsByEmailIgnoreCase(email)) {
+            log.warn("Signup rejected, email={} already registered", email);
+            throw new UserAlreadyExistsException(
+                "An account with this email already exists");
+        }
     }
 }
