@@ -14,14 +14,17 @@ import ci.kpata.backend.auth.internal.dto.AuthResponseDto;
 import ci.kpata.backend.auth.internal.dto.LoginRequestDto;
 import ci.kpata.backend.auth.internal.dto.SignupRequestDto;
 import ci.kpata.backend.auth.internal.dto.UserClaimsDto;
+import ci.kpata.backend.auth.internal.dto.UserDto;
 import ci.kpata.backend.auth.internal.exception.InvalidCredentialsException;
 import ci.kpata.backend.auth.internal.exception.UserAlreadyExistsException;
+import ci.kpata.backend.auth.internal.exception.UserNotFoundException;
 import ci.kpata.backend.auth.internal.jwt.JwtProvider;
 import ci.kpata.backend.auth.internal.mapper.UserMapper;
 import ci.kpata.backend.auth.internal.repository.UserRepository;
 import ci.kpata.backend.shared.validation.PhoneNumberNormalizer;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,6 +32,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -153,6 +157,87 @@ class AuthServiceTest {
             .isInstanceOf(UserAlreadyExistsException.class);
 
         verify(repo, never()).save(any());
+    }
+
+    @Test
+    void signup_withExistingEmail_throwsAndNeverSaves() {
+
+        var dto = new SignupRequestDto("Jane", "Doe", RAW_PHONE_NUMBER, PASSWORD, "jane.doe@example.com");
+
+        when(normalizer.normalize(RAW_PHONE_NUMBER)).thenReturn(PHONE_NUMBER);
+        when(repo.existsByPhoneNumber(PHONE_NUMBER)).thenReturn(false);
+        when(repo.existsByEmailIgnoreCase("jane.doe@example.com")).thenReturn(true);
+
+        assertThatThrownBy(() -> authService.signup(dto))
+            .isInstanceOf(UserAlreadyExistsException.class);
+
+        verify(repo, never()).save(any());
+    }
+
+    @Test
+    void signup_withBlankEmail_treatsItAsNoEmail() {
+
+        var dto = new SignupRequestDto("Jane", "Doe", RAW_PHONE_NUMBER, PASSWORD, "  ");
+
+        when(normalizer.normalize(RAW_PHONE_NUMBER)).thenReturn(PHONE_NUMBER);
+        when(repo.existsByPhoneNumber(PHONE_NUMBER)).thenReturn(false);
+        when(encoder.encode(PASSWORD)).thenReturn("hashed-password");
+        when(provider.createToken(any())).thenReturn("signed-token");
+
+        authService.signup(dto);
+
+        verify(repo, never()).existsByEmailIgnoreCase(any());
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(repo).save(userCaptor.capture());
+        assertThat(userCaptor.getValue().getEmail()).isNull();
+    }
+
+    @Test
+    void signup_whenSaveRacesWithConcurrentSignup_throwsUserAlreadyExists() {
+
+        var dto = new SignupRequestDto("Jane", "Doe", RAW_PHONE_NUMBER, PASSWORD, "jane.doe@example.com");
+
+        when(normalizer.normalize(RAW_PHONE_NUMBER)).thenReturn(PHONE_NUMBER);
+        when(repo.existsByPhoneNumber(PHONE_NUMBER)).thenReturn(false);
+        when(repo.existsByEmailIgnoreCase("jane.doe@example.com")).thenReturn(false);
+        when(encoder.encode(PASSWORD)).thenReturn("hashed-password");
+        when(repo.save(any())).thenThrow(new DataIntegrityViolationException("duplicate key"));
+
+        assertThatThrownBy(() -> authService.signup(dto))
+            .isInstanceOf(UserAlreadyExistsException.class);
+
+        verify(provider, never()).createToken(any());
+    }
+
+    @Test
+    void findUserByPhoneNumber_withExistingUser_returnsMappedDto() {
+
+        User user = User
+            .builder()
+            .firstname("Jane")
+            .lastname("Doe")
+            .phoneNumber(PHONE_NUMBER)
+            .password("hashed-password")
+            .roles(java.util.Set.of(Role.CUSTOMER))
+            .build();
+        UserDto expected = new UserDto("Jane", "Doe", PHONE_NUMBER, null, java.util.Set.of(Role.CUSTOMER));
+
+        when(repo.findByPhoneNumber(PHONE_NUMBER)).thenReturn(Optional.of(user));
+        when(mapper.toDto(user)).thenReturn(expected);
+
+        UserDto result = authService.findUserByPhoneNumber(PHONE_NUMBER);
+
+        assertThat(result).isEqualTo(expected);
+    }
+
+    @Test
+    void findUserByPhoneNumber_withUnknownPhoneNumber_throwsUserNotFound() {
+
+        when(repo.findByPhoneNumber(PHONE_NUMBER)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> authService.findUserByPhoneNumber(PHONE_NUMBER))
+            .isInstanceOf(UserNotFoundException.class);
     }
 
     @Test
