@@ -194,6 +194,25 @@ class AuthServiceTest {
     }
 
     @Test
+    void signup_withNullEmail_skipsEmailUniquenessCheck() {
+
+        var dto = new SignupRequestDto("Jane", "Doe", RAW_PHONE_NUMBER, PASSWORD, null);
+
+        when(normalizer.normalize(RAW_PHONE_NUMBER)).thenReturn(PHONE_NUMBER);
+        when(repo.existsByPhoneNumber(PHONE_NUMBER)).thenReturn(false);
+        when(encoder.encode(PASSWORD)).thenReturn("hashed-password");
+        when(provider.createToken(any())).thenReturn("signed-token");
+
+        authService.signup(dto);
+
+        verify(repo, never()).existsByEmailIgnoreCase(any());
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(repo).save(userCaptor.capture());
+        assertThat(userCaptor.getValue().getEmail()).isNull();
+    }
+
+    @Test
     void signup_whenSaveRacesWithConcurrentSignup_throwsUserAlreadyExists() {
 
         var dto = new SignupRequestDto("Jane", "Doe", RAW_PHONE_NUMBER, PASSWORD, "jane.doe@example.com");

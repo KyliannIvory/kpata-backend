@@ -96,6 +96,25 @@ class JwtProviderTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void purgeExpiredRevokedTokens_removesOnlyEntriesPastTheirExpiration() {
+
+        var claims = new UserClaimsDto(PHONE_NUMBER, Set.of(Role.CUSTOMER));
+        String stillValidToken = provider.createToken(claims);
+        provider.revokeToken(stillValidToken);
+
+        var revokedTokens = (java.util.Map<String, java.util.Date>)
+            ReflectionTestUtils.getField(provider, "revokedTokens");
+        revokedTokens.put("already-expired-token", new java.util.Date(System.currentTimeMillis() - 1_000));
+
+        ReflectionTestUtils.invokeMethod(provider, "purgeExpiredRevokedTokens");
+
+        assertThat(revokedTokens)
+            .containsKey(stillValidToken)
+            .doesNotContainKey("already-expired-token");
+    }
+
+    @Test
     void extractBearerToken_withValidHeader_returnsRawToken() {
         assertThat(JwtProvider.extractBearerToken("Bearer abc123")).isEqualTo("abc123");
     }
