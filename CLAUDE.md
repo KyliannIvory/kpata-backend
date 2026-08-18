@@ -741,6 +741,21 @@ les commandes réellement exécutées.
 
 Ne prétends jamais avoir exécuté une commande ou vérifié quelque chose si ce n'est pas réellement le cas.
 
+Vérification de couverture avant de finaliser des commits
+
+Quand une série de changements est prête à être committée (ou juste après), lance
+`./mvnw clean test jacoco:report` et lis le rapport JaCoCo pour les fichiers ajoutés ou
+modifiés dans la session en cours. Pour toute ligne, branche ou condition non couverte
+(`nc`/`pc`) sur du code qu'on vient d'écrire, ajoute le test correspondant avant de committer.
+
+Ne cherche pas artificiellement 100% sur du code préexistant non touché par la tâche en
+cours — la couverture visée porte sur ce qui vient d'être ajouté ou modifié.
+
+Vérifie en particulier le cas où du code neuf n'est exercé qu'à travers un mock dans les
+tests d'un autre composant (ex. une dépendance en `@Mock`) : ça masque que l'implémentation
+réelle de ce code n'est jamais testée nulle part, même si la classe qui l'appelle affiche
+100% de couverture.
+
 20. Dépendances et nouvelles technologies
 
 N'ajoute pas une dépendance simplement parce qu'elle permet de résoudre rapidement un problème.
