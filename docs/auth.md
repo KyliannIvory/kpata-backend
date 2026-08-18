@@ -79,25 +79,7 @@ après `DispatcherServlet`) : Javadoc de `GlobalExceptionHandler` et `ErrorRespo
 
 ### 6.1 Par où commencer (prêt, pas bloqué par autre chose)
 
-Dans l'ordre suggéré — les deux premiers sont indépendants entre eux, fais celui que tu veux
-en premier ; le reste peut attendre.
-
-1. **Email dupliqué au signup → 500 au lieu d'un 409 propre** : l'email est optionnel (choix
-   assumé, seul le téléphone est obligatoire) mais `UNIQUE` en base (`uq_users_email`).
-   `AuthService.signup` ne vérifie que le téléphone (`existsByPhoneNumber`), jamais l'email —
-   `repo.save(...)` lève alors une `DataIntegrityViolationException` non gérée par
-   `GlobalExceptionHandler`, qui répond 500. Reproduit en réel le 2026-08-17 (deux signups,
-   même email, téléphones différents). TODO posé dans `AuthService.signup` : ajouter
-   `repo.existsByEmail(...)` (en ignorant null/vide), sur le modèle de la vérification
-   téléphone.
-2. **`phoneNumber` jamais normalisé** : `@IvoryCoastPhone` accepte format local
-   (`0788112233`) et E.164 (`+2250788112233`), mais `existsByPhoneNumber`/`findByPhoneNumber`
-   comparent la chaîne brute. Un même numéro envoyé sous deux formats différents entre signup
-   et login est traité comme deux comptes distincts (login échoue). Reproduit en réel le
-   2026-08-17. TODO posé dans `AuthService.signup` : normaliser vers E.164 avant
-   stockage/comparaison, ou à défaut imposer un format unique côté frontend en attendant (déjà
-   communiqué : voir `docs/frontend-auth-answers.md`).
-3. **`java.util.Date` → `java.time.Instant` dans `JwtProvider`** (exigence Sonar) : TODO posé
+1. **`java.util.Date` → `java.time.Instant` dans `JwtProvider`** (exigence Sonar) : TODO posé
    dans la Javadoc de la classe, avec le détail (utiliser `Instant`, pas `LocalDateTime` —
    raison expliquée sur place — et convertir aux frontières puisque JJWT 0.13.0 impose encore
    `Date` sur `expiration()`/`issuedAt()`/`getExpiration()`).
@@ -113,6 +95,16 @@ en premier ; le reste peut attendre.
 
 ### 6.3 Décidé (pour référence, rien à faire)
 
+- **Email dupliqué au signup → 500 au lieu d'un 409 propre** — corrigé le 2026-08-18 :
+  `UserRepository.existsByEmailIgnoreCase` ajouté, vérifié dans `AuthService.validateSignup`
+  (email `null`/vide ignoré, comme le choix assumé de le rendre optionnel). `signup` traite en
+  plus `DataIntegrityViolationException` comme filet de sécurité pour une race condition entre
+  la vérification et l'insertion.
+- **`phoneNumber` jamais normalisé** — corrigé le 2026-08-18 : `PhoneNumberNormalizer`
+  (E.164 via `PhoneNumberUtil`, région `CI`) appelé une seule fois en tête de
+  `AuthService.login`/`signup`, et la valeur normalisée réutilisée partout ensuite —
+  vérification d'unicité, entité sauvegardée, claims du JWT — pour qu'un même numéro envoyé
+  sous deux formats désigne toujours le même compte.
 - **Principal `Authentication` incohérent** : `AuthService.login` porte un `UserDetails`,
   `JwtProvider#getAuthentication` (donc toute route protégée) porte un `String`. Décision
   du 2026-08-17 : laissé tel quel. Ne pas caster en `UserDetails` ailleurs que dans `login`.
