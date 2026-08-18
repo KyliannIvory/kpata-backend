@@ -19,7 +19,7 @@ import java.util.Set;
 @AllArgsConstructor
 @Table(name = "users")
 @Builder
-class User extends BaseEntity {
+public class User extends BaseEntity {
 
     @Id
     @UuidGenerator(style = UuidGenerator.Style.VERSION_7)
