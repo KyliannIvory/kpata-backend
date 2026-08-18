@@ -79,10 +79,7 @@ après `DispatcherServlet`) : Javadoc de `GlobalExceptionHandler` et `ErrorRespo
 
 ### 6.1 Par où commencer (prêt, pas bloqué par autre chose)
 
-1. **`java.util.Date` → `java.time.Instant` dans `JwtProvider`** (exigence Sonar) : TODO posé
-   dans la Javadoc de la classe, avec le détail (utiliser `Instant`, pas `LocalDateTime` —
-   raison expliquée sur place — et convertir aux frontières puisque JJWT 0.13.0 impose encore
-   `Date` sur `expiration()`/`issuedAt()`/`getExpiration()`).
+_Rien pour l'instant._
 
 ### 6.2 Bloqué par autre chose (rien à faire avant que le déclencheur arrive)
 
@@ -95,6 +92,13 @@ après `DispatcherServlet`) : Javadoc de `GlobalExceptionHandler` et `ErrorRespo
 
 ### 6.3 Décidé (pour référence, rien à faire)
 
+- **`java.util.Date` conservé dans `JwtProvider`** (plutôt que migrer vers
+  `java.time.Instant`, suggestion Sonar) — décidé le 2026-08-18 : JJWT 0.13.0 impose encore
+  `Date` sur `JwtBuilder.expiration()`/`issuedAt()` et `Claims.getExpiration()`. Migrer en
+  interne vers `Instant` n'aurait fait que déplacer la conversion aux frontières (`Date.from`/
+  `toInstant`) sans supprimer `Date` du code, pour un gain jugé insuffisant vu le coût. `Date`
+  reste utilisé partout dans la classe (`revokedTokens`, `createToken`, `revokeToken`,
+  `purgeExpiredRevokedTokens`).
 - **Email dupliqué au signup → 500 au lieu d'un 409 propre** — corrigé le 2026-08-18 :
   `UserRepository.existsByEmailIgnoreCase` ajouté, vérifié dans `AuthService.validateSignup`
   (email `null`/vide ignoré, comme le choix assumé de le rendre optionnel). `signup` traite en
