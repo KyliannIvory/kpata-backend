@@ -25,6 +25,7 @@ import ci.kpata.backend.shared.validation.PhoneNumberNormalizer;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -240,7 +241,8 @@ class AuthServiceTest {
             .password("hashed-password")
             .roles(java.util.Set.of(Role.CUSTOMER))
             .build();
-        UserDto expected = new UserDto("Jane", "Doe", PHONE_NUMBER, null, java.util.Set.of(Role.CUSTOMER));
+        UserDto expected = new UserDto(
+            UUID.randomUUID(), "Jane", "Doe", PHONE_NUMBER, null, java.util.Set.of(Role.CUSTOMER));
 
         when(repo.findByPhoneNumber(PHONE_NUMBER)).thenReturn(Optional.of(user));
         when(mapper.toDto(user)).thenReturn(expected);
