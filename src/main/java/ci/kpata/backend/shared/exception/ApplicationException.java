@@ -1,5 +1,7 @@
-package ci.kpata.backend.shared.web;
+package ci.kpata.backend.shared.exception;
 
+import ci.kpata.backend.shared.web.ErrorResponseDto;
+import ci.kpata.backend.shared.web.GlobalExceptionHandler;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
