@@ -101,7 +101,7 @@ public class JwtWebSecurityConfig {
             // controllers exist, to match their actual browse/search routes.
             config
                 .requestMatchers(HttpMethod.GET, "/salons/**", "/treatments/**",
-                    "/availabilities/**")
+                    "/availabilities/**", "/professionals/**")
                 .permitAll();
 
             config

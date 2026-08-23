@@ -20,6 +20,7 @@ import ci.kpata.backend.auth.internal.exception.InvalidCredentialsException;
 import ci.kpata.backend.auth.internal.exception.UserNotFoundException;
 import ci.kpata.backend.shared.web.ErrorResponseWriter;
 import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -182,7 +183,7 @@ class AuthControllerTest {
     void whoAmI_withValidToken_returns200WithUserDto() throws Exception {
 
         UserDto userDto = new UserDto(
-                "Jane", "Doe", PHONE_NUMBER, "jane.doe@example.com", Set.of(Role.CUSTOMER));
+                UUID.randomUUID(), "Jane", "Doe", PHONE_NUMBER, "jane.doe@example.com", Set.of(Role.CUSTOMER));
         when(authService.findUserByPhoneNumber(PHONE_NUMBER)).thenReturn(userDto);
 
         mvc.perform(get("/auth/me")

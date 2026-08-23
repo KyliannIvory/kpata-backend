@@ -1,6 +1,6 @@
 package ci.kpata.backend.auth.internal.exception;
 
-import ci.kpata.backend.shared.web.ApplicationException;
+import ci.kpata.backend.shared.exception.ApplicationException;
 import org.springframework.http.HttpStatus;
 
 /**
