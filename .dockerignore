@@ -1,0 +1,10 @@
+# Not needed inside the image — excluded so `docker build .` doesn't send them to the
+# daemon as part of the build context.
+target/
+.git/
+.idea/
+*.iml
+.github/
+docs/
+*.md
+docker-compose.yml

@@ -142,6 +142,7 @@
 	</dependencyManagement>
 
 	<build>
+		<finalName>kpata-backend</finalName>
 		<pluginManagement>
 			<plugins>
 				<plugin>
